@@ -3,6 +3,7 @@ import { addProfile, editProfile } from "../database/profile"
 import { useEffect, useState } from "react"
 import { useDispatch } from "react-redux"
 import { selectProfile } from "../features/profileSlice"
+import { showAlert } from "../features/alertSlice"
 
 export default function ModalProfile({ isOpen, onOpenChange, profile = null, isNewProfile }) {
 
@@ -22,7 +23,7 @@ export default function ModalProfile({ isOpen, onOpenChange, profile = null, isN
         if (isNewProfile) {
             try {
                 await addProfile(name)
-                // actionner une notification ici
+                dispatch(showAlert({message: "Nouveau profil créé.", type: "success"}))
                 onClose()
             } catch (error) {
                 console.log(error)
@@ -31,8 +32,7 @@ export default function ModalProfile({ isOpen, onOpenChange, profile = null, isN
         } else {
             try {
                 await editProfile(profile.id, name)
-                // actionner une notification ici
-
+                dispatch(showAlert({message: "Profil modifié.", type: "success"}))
                 dispatch(selectProfile({... profile, name: name}))
                 onClose()
             } catch (error) {

@@ -17,6 +17,7 @@ import { Pencil, Trash } from "lucide-react";
 import ModalConfirm from "../componnents/ModalConfirm";
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { showAlert } from "../features/alertSlice";
 
 export default function Home() {
 
@@ -81,12 +82,15 @@ export default function Home() {
       {/* Profil sélectionné */}
       {selectedProfile && 
       <BoxContent>
-        <p className="text-2xl text-center mb-2">Bonjour
-          <span className="font-bold"> {selectedProfile.name}</span>
-          <Button onPress={() => {setIsNewProfile(false); onOpenProfile()}} size="sm" isIconOnly radius="full" className="ml-3"><Pencil size={17} /></Button>
-          <Button onPress={onOpenConfirm} size="sm" isIconOnly color="danger" radius="full" className="ml-1"><Trash size={17} /></Button>
-
-        </p>
+        <div className="flex flex-col justify-center items-center">
+          <p className="text-2xl text-center mb-2">Bonjour
+            <span className="font-bold"> {selectedProfile.name}</span>
+          </p>
+          <div className="flex gap-2">
+            <Button onPress={() => {setIsNewProfile(false); onOpenProfile()}} size="sm" isIconOnly radius="full"><Pencil size={17} /></Button>
+            <Button onPress={onOpenConfirm} size="sm" isIconOnly color="danger" radius="full"><Trash size={17} /></Button>
+          </div>
+        </div>
 
         <BoxContent>
           <p>Informations du profil.</p>
@@ -111,7 +115,8 @@ export default function Home() {
         isOpen={isOpenConfirm} 
         onOpenChange={onOpenChangeConfirm} 
         message="Etes-vous sur de vouloir supprimer ce profil ?"
-        onConfirm={() => {deleteProfile(selectedProfile.id); dispatch(selectProfile(null))}}/>
+        onConfirm={() => {deleteProfile(selectedProfile.id); dispatch(selectProfile(null)); dispatch(showAlert({message: "Profil supprimé.", type: "success"}))}}
+        />
     </>
   );
 }
