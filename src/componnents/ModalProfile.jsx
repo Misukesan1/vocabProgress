@@ -1,83 +1,102 @@
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Form } from "@heroui/react"
-import { addProfile, editProfile } from "../database/profile"
-import { useEffect, useState } from "react"
-import { useDispatch } from "react-redux"
-import { selectProfile } from "../features/profileSlice"
-import { showAlert } from "../features/alertSlice"
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  Input,
+  Form,
+} from "@heroui/react";
+import { addProfile, editProfile } from "../database/profile";
+import { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
+import { selectProfile } from "../features/profileSlice";
+import { showAlert } from "../features/alertSlice";
 
-export default function ModalProfile({ isOpen, onOpenChange, profile = null, isNewProfile }) {
+export default function ModalProfile({
+  isOpen, // useDisclosure (heroUi)
+  onOpenChange, // useDisclosure (heroUi)
+  profile = null, // objet profile sélectionné (depuis le store)
+  isNewProfile, // boolean pour savoir si c'est un create ou update à faire
+}) {
 
-    const [ errorNameMessage, setErrorNameMessage ] = useState("")
-    const dispatch = useDispatch()
-    const titleModal = (!isNewProfile) ? "Modifier le profil." : "Créer un nouveau profil."
-    const textButtonSubmit = (!isNewProfile) ? "Modifier" : "Créer"
+  const [errorNameMessage, setErrorNameMessage] = useState("");
+  const titleModal = !isNewProfile
+  ? "Modifier le profil."
+  : "Créer un nouveau profil.";
+  const textButtonSubmit = !isNewProfile ? "Modifier" : "Créer";
+  
+  const dispatch = useDispatch();
 
-    useEffect(() => {
-        setErrorNameMessage("")
-    }, [isOpen])
+  // Soumission du formulaire
+  async function handleSubmit(e, onClose) {
+    e.preventDefault();
+    const name = e.target[0].value;
 
-    async function handleSubmit(e, onClose) {
-        e.preventDefault()
-        const name = e.target[0].value
-
-        if (isNewProfile) {
-            try {
-                await addProfile(name)
-                dispatch(showAlert({message: "Nouveau profil créé.", type: "success"}))
-                onClose()
-            } catch (error) {
-                console.log(error)
-                setErrorNameMessage(error.message)
-            }
-        } else {
-            try {
-                await editProfile(profile.id, name)
-                dispatch(showAlert({message: "Profil modifié.", type: "success"}))
-                dispatch(selectProfile({... profile, name: name}))
-                onClose()
-            } catch (error) {
-                console.log(error)
-                setErrorNameMessage(error.message)
-            }
-        }
+    if (isNewProfile) {
+      try {
+        await addProfile(name);
+        dispatch(
+          showAlert({ message: "Nouveau profil créé.", type: "success" }),
+        );
+        onClose();
+      } catch (error) {
+        setErrorNameMessage(error.message);
+      }
+    } else {
+      try {
+        await editProfile(profile.id, name);
+        dispatch(showAlert({ message: "Profil modifié.", type: "success" }));
+        dispatch(selectProfile({ ...profile, name: name }));
+        onClose();
+      } catch (error) {
+        setErrorNameMessage(error.message);
+      }
     }
+  }
 
-    return (
-        <Modal
-            isOpen={isOpen}
-            onOpenChange={onOpenChange}
-            isDismissable={false}
-            isKeyboardDismissDisabled={true}
-            placement="center"
-            backdrop="blur"
-        >
-            <ModalContent>
-                {(onClose) => (
-                    <Form className="contents" onSubmit={(e) => handleSubmit(e, onClose)}>
-                        <ModalHeader>{titleModal}</ModalHeader>
-                        <ModalBody>
-                            <Input
-                                label="Nom du profil"
-                                isInvalid={errorNameMessage.length > 0}
-                                errorMessage={errorNameMessage}
-                                onChange={() => setErrorNameMessage("")}
-                                validate={(value) => {
-                                    if (value.length > 25) return "Maximum 25 caractères."
-                                }}
-                                defaultValue={(isNewProfile) ? "" : profile?.name}
-                            />
-                        </ModalBody>
-                        <ModalFooter>
-                            <Button variant="light" color="danger" onPress={onClose}>
-                                Retour
-                            </Button>
-                            <Button color="primary" type="submit">
-                                {textButtonSubmit}
-                            </Button>
-                        </ModalFooter>
-                    </Form>
-                )}
-            </ModalContent>
-        </Modal>
-    )
+  // Effacer les erreurs lorsque le modal s'ouvre
+  useEffect(() => {
+    setErrorNameMessage("");
+  }, [isOpen]);
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      isDismissable={false}
+      isKeyboardDismissDisabled={true}
+      placement="center"
+      backdrop="blur"
+    >
+      <ModalContent>
+        {(onClose) => (
+          <Form className="contents" onSubmit={(e) => handleSubmit(e, onClose)}>
+            <ModalHeader>{titleModal}</ModalHeader>
+            <ModalBody>
+              <Input
+                label="Nom du profil"
+                isInvalid={errorNameMessage.length > 0}
+                errorMessage={errorNameMessage}
+                onChange={() => setErrorNameMessage("")}
+                validate={(value) => {
+                  if (value.length > 25) return "Maximum 25 caractères.";
+                }}
+                defaultValue={isNewProfile ? "" : profile?.name}
+              />
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="light" color="danger" onPress={onClose}>
+                Retour
+              </Button>
+              <Button color="primary" type="submit">
+                {textButtonSubmit}
+              </Button>
+            </ModalFooter>
+          </Form>
+        )}
+      </ModalContent>
+    </Modal>
+  );
 }
