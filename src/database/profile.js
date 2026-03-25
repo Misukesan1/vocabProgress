@@ -6,8 +6,8 @@ import { db } from "./db";
  * @property {string} name
  */
 
-// * Private methodes
-// * -----------------
+// * Private methods
+// * ----------------
 
 /**
  * Validation du nom (requis et max 25 caractères)
@@ -15,9 +15,9 @@ import { db } from "./db";
  * @throws {Error} si il y a une erreur de validation
  */
 function validationNameProfile(name) {
-  if (name.length === 0) throw new Error("Veuillez entrer un nom.");
+  if (name.length === 0) throw new Error("Champ requis.");
   if (name.length > 25)
-    throw new Error("Le nom ne peut pas dépasser 25 caractères.");
+    throw new Error("Maximum 25 caractères.");
 }
 
 /**
@@ -37,7 +37,7 @@ async function checkProfileIfExist(name) {
 /**
  * Création d'un nouveau profile
  * @param {string} name 
- * @throws {Error} si le nom existe déjà
+ * @throws {Error} si le nom existe déjà ou qu'il y a des erreurs de validation
  * @returns {Promise<number>} id du profil crée
  */
 export const addProfile = async (name) => {
@@ -86,7 +86,7 @@ export const deleteAllProfiles = async () => {
 /**
  * Informations d'un profil
  * @param {number} id 
- * @returns {Promise<Profile | undefined>} retourne l'objet dexie du profil trouvé ou undefined
+ * @returns {Promise<Profile|undefined>} retourne l'objet dexie du profil trouvé ou undefined
  */
 export const getProfile = async (id) => {
   return db.profile.get(id);

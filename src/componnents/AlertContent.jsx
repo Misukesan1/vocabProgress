@@ -8,6 +8,7 @@ export default function AlertContent({ message, style, isVisible }) {
 
   return (
     <Alert
+      className="fixed top-16 left-0 right-0 z-50"
       color={style}
       title={message}
       radius="none"

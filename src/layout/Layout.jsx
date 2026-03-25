@@ -25,7 +25,7 @@ export default function Layout() {
 
       <Header />
 
-      <main className="pt-18">
+      <main className="pt-18 pb-18">
         
         <AlertContent
           message={alert.message}
