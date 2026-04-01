@@ -7,15 +7,23 @@ import BoxContent from "../componnents/BoxContent";
 import ModalFiche from "../componnents/ModalFiche";
 import { useNavigate } from "react-router";
 import { ArrowLeft } from "lucide-react";
+import { useEffect } from "react";
 
 export default function Fiches() {
   const selectProfile = useSelector((state) => state.profile.selectedProfile);
+  const selectedFiche = useSelector((state) => state.fiche.selectedFiche)
   const fiches = useLiveQuery(
     () => (selectProfile ? getFichesFromProfile(selectProfile?.id) : null),
     [selectProfile],
   );
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (selectedFiche) navigate(`/fiche/${selectedFiche.id}`)
+  }, [])
+
+  if (selectedFiche) return null
 
   return (
     <>

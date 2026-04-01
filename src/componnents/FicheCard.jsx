@@ -1,12 +1,16 @@
-import { Card, CardBody, Button, useDisclosure } from "@heroui/react";
-import { Pencil, Trash } from "lucide-react";
+import { Card, CardBody, Button, useDisclosure, useSelect } from "@heroui/react";
+import { Info, Pencil, Trash } from "lucide-react";
 import ModalFiche from "./ModalFiche";
 import ModalConfirm from "./ModalConfirm";
 import { deleteFiche } from "../database/fiche";
 import { useDispatch } from "react-redux";
 import { showAlert } from "../features/alertSlice";
+import { useNavigate } from "react-router";
+import { selectFiche } from "../features/ficheSlice";
 
 export default function FicheCard({ name, description, fiche }) {
+
+  const navigate = useNavigate()
 
   const {
     isOpen: isOpenModalFiche,
@@ -32,12 +36,18 @@ export default function FicheCard({ name, description, fiche }) {
     }
   };
 
+  const handleDetails = () => {
+    dispatch(selectFiche(fiche))
+    navigate(`/fiche/${fiche.id}`)
+  }
+
   return (
     <>
       <Card
         shadow="sm"
         radius="sm"
         className="mx-3 mb-1 my-1 border border-divider/50"
+        onPress={() => navigate(`/fiche/${fiche.id}`)}
       >
         <CardBody className="flex flex-row items-center justify-between px-4 py-3">
           <div className="flex flex-col">
@@ -47,6 +57,16 @@ export default function FicheCard({ name, description, fiche }) {
             )}
           </div>
           <div className="flex gap-1">
+            <Button
+              isIconOnly
+              size="sm"
+              radius="full"
+              variant="light"
+              color="primary"
+              onPress={handleDetails}
+            >
+              <Info size={15} />
+            </Button>
             <Button
               isIconOnly
               size="sm"

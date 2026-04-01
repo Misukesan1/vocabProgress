@@ -95,7 +95,8 @@ export const editFiche = async (id, name, description, profileId) => {
  * @param {number} id 
  * @returns {Promise<void>}
  */
-export const deleteFiche = (id) => {
+export const deleteFiche = async (id) => {
+  await db.flashcard.where({ficheId: id}).delete()
   return db.fiche.delete(id);
 };
 

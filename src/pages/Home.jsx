@@ -14,9 +14,10 @@ import { useSelector, useDispatch } from "react-redux";
 import ModalProfile from "../componnents/ModalProfile";
 import { Pencil, Trash } from "lucide-react";
 import ModalConfirm from "../componnents/ModalConfirm";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { showAlert } from "../features/alertSlice";
+import { testingFlashcard } from "../tests/testFlashcard";
 
 export default function Home() {
 
@@ -40,6 +41,10 @@ export default function Home() {
     onOpen: onOpenConfirm,
     onOpenChange: onOpenChangeConfirm,
   } = useDisclosure();
+
+  // useEffect(() => {
+  //   testingFlashcard()
+  // }, [])
 
   return (
     <>
