@@ -42,10 +42,6 @@ export default function Home() {
     onOpenChange: onOpenChangeConfirm,
   } = useDisclosure();
 
-  // useEffect(() => {
-  //   testingFlashcard()
-  // }, [])
-
   return (
     <>
 
@@ -183,7 +179,7 @@ export default function Home() {
       <ModalConfirm
         isOpen={isOpenConfirm}
         onOpenChange={onOpenChangeConfirm}
-        message="Etes-vous sur de vouloir supprimer ce profil ?"
+        message={`Etes-vous sur de vouloir supprimer ce profil (${selectedProfile.name})?`}
         onConfirm={() => {
           deleteProfile(selectedProfile.id);
           dispatch(selectProfile(null));

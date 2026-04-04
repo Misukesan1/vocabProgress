@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { deleteFiche, getFichesFromProfile } from "./fiche";
 
 /**
  * @typedef {Object} Profile
@@ -71,7 +72,10 @@ export const editProfile = async (id, name) => {
  * @returns {Promise<void>} ne retourne rien (que la suppression se soit effectuée ou non)
  */
 export const deleteProfile = async (id) => {
-  if (!(await getProfile(id))) throw new Error("Profil introuvable.");
+  const ficheToDelete = await getFichesFromProfile(id)
+  for (const fiche of ficheToDelete) {
+    await deleteFiche(fiche.id)
+  }
   return db.profile.delete(id);
 };
 

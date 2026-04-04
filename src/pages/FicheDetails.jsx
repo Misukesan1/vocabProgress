@@ -31,8 +31,9 @@ export default function FicheDetails() {
   }
 
   useEffect(() => {
-    if (!selectedProfile || !selectedFiche) navigate("/")
-  }, [])
+    if (!selectedProfile) navigate("/")
+    if (!selectedFiche) navigate("/fiches")
+  }, [selectedProfile, selectedFiche])
 
   return (
     <>

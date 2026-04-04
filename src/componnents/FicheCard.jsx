@@ -99,7 +99,7 @@ export default function FicheCard({ name, description, fiche }) {
       <ModalConfirm
         isOpen={isOpenModalConfirm}
         onOpenChange={onOpenChangeModalConfirm}
-        message={"Etes-vous sur de vouloir supprimer cette fiche ?"}
+        message={`Etes-vous sur de vouloir supprimer cette fiche (${fiche.name}) ?`}
         onConfirm={() => handleDelete(fiche, onCloseModalConfirm)}
       />
     </>

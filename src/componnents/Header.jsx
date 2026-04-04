@@ -12,6 +12,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { selectProfile } from "../features/profileSlice";
 import { useLiveQuery } from "dexie-react-hooks";
 import { getProfiles } from "../database/profile";
+import { selectFiche } from "../features/ficheSlice";
 
 export default function Header() {
 
@@ -42,7 +43,7 @@ export default function Header() {
             {profils?.map((profil) => (
               <DropdownItem
                 key={profil.id}
-                onPress={(e) => dispatch(selectProfile(profil))}
+                onPress={(e) => {dispatch(selectProfile(profil));dispatch(selectFiche(null))}}
               >
                 {profil.name}
               </DropdownItem>
