@@ -43,7 +43,7 @@ export default function Header() {
             {profils?.map((profil) => (
               <DropdownItem
                 key={profil.id}
-                onPress={(e) => {dispatch(selectProfile(profil));dispatch(selectFiche(null))}}
+                onPress={(e) => {dispatch(selectProfile(profil)); dispatch(selectFiche(null))}}
               >
                 {profil.name}
               </DropdownItem>

@@ -66,10 +66,9 @@ export const editProfile = async (id, name) => {
 };
 
 /**
- * Suppression d'un profile
+ * Suppression d'un profile et les fiches et flashcards associées.
  * @param {number} id 
- * @throws {Error} si le profil est introuvable
- * @returns {Promise<void>} ne retourne rien (que la suppression se soit effectuée ou non)
+ * @returns {Promise<void>}
  */
 export const deleteProfile = async (id) => {
   const ficheToDelete = await getFichesFromProfile(id)

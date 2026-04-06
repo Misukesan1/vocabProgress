@@ -11,7 +11,7 @@ import { useEffect } from "react";
 
 export default function Fiches() {
   const selectProfile = useSelector((state) => state.profile.selectedProfile);
-  const selectedFiche = useSelector((state) => state.fiche.selectedFiche)
+  const selectedFiche = useSelector((state) => state.fiche.selectedFiche);
   const fiches = useLiveQuery(
     () => (selectProfile ? getFichesFromProfile(selectProfile?.id) : null),
     [selectProfile],
@@ -20,10 +20,10 @@ export default function Fiches() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (selectedFiche) navigate(`/fiche/${selectedFiche.id}`)
-  }, [])
+    if (selectedFiche) navigate(`/fiche/${selectedFiche.id}`);
+  }, []);
 
-  if (selectedFiche) return null
+  if (selectedFiche) return null;
 
   return (
     <>

@@ -6,19 +6,11 @@ import {
   ChartNoAxesCombined,
   Settings,
 } from "lucide-react";
-import { useEffect } from "react";
-import { useDispatch } from "react-redux";
-import { selectFiche } from "../features/ficheSlice";
 
 export default function Footer() {
     
   const location = useLocation();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-
-  // useEffect(() => {
-  //   if (!location.pathname.startsWith("/fiche")) dispatch(selectFiche(null))
-  // }, [location.pathname])
 
   return (
     <div className="fixed bottom-0 w-full border-t border-divider bg-background flex justify-around items-center px-4 py-2">
