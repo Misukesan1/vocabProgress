@@ -34,7 +34,7 @@ export default function Footer() {
       >
         <NotebookTabs
           className={
-            location.pathname === "/fiches" ||location.pathname.startsWith("/fiche/") 
+            location.pathname === "/fiches" || location.pathname.startsWith("/fiche/") 
               ? "text-primary" 
               : "text-foreground"
           }

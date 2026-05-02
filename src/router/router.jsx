@@ -5,6 +5,7 @@ import Fiches from "../pages/Fiches";
 import Progress from "../pages/Progress";
 import Settings from "../pages/Settings";
 import FicheDetails from "../pages/FicheDetails";
+import Training from "../pages/Training";
 
 const router = createBrowserRouter([
   {
@@ -22,6 +23,10 @@ const router = createBrowserRouter([
       {
         path: "/fiche/:id",
         element: <FicheDetails />,
+      },
+      {
+        path: "/fiche/:id/training",
+        element: <Training />
       },
       {
         path: "/progres",

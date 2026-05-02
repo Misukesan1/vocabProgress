@@ -89,6 +89,15 @@ export const getFlashcardsFromFiche = (ficheId) => {
 }
 
 /**
+ * Liste des flashcards a afficher pour l'entrainement
+ * @param {number} ficheId 
+ * @returns {Promise<Flashcard[]>}
+ */
+export const getSelectedFlashcards = (ficheId) => {
+    return db.flashcard.where({ficheId: ficheId}).filter(f => !f.desactive).toArray()
+}
+
+/**
  * Activer ou désactiver une flashcard
  * @param {number} id 
  * @param {boolean} currentStatus le status actuel de la flashcard
@@ -97,4 +106,16 @@ export const getFlashcardsFromFiche = (ficheId) => {
 export const toggleStatusFlashcard = async (id, currentStatus) => {
     await db.flashcard.update(id, {desactive: !currentStatus})
     return db.flashcard.get(id)
+}
+
+/**
+ * Activer toutes les flashcards d'une fiche
+ * @param {number} idFiche 
+ * @return {void}
+ */
+export const activeAllFlashcards = async (idFiche) => {
+    const flashcards = await db.flashcard.where({ficheId: idFiche}).toArray()
+    for (const flashcard of flashcards) {
+        await db.flashcard.update(flashcard.id, {desactive: false})
+    }
 }

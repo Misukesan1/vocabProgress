@@ -8,8 +8,14 @@ import { Button, useDisclosure } from "@heroui/react";
 import { ArrowLeft } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
-import { getFlashcardsFromFiche } from "../database/flashcard";
+import {
+  activeAllFlashcards,
+  getFlashcardsFromFiche,
+  getSelectedFlashcards,
+} from "../database/flashcard";
 import ModalFlashcard from "../componnents/ModalFlashcard";
+import { setFlashcards } from "../features/trainingSlice";
+import { showAlert } from "../features/alertSlice";
 
 export default function FicheDetails() {
   const navigate = useNavigate();
@@ -17,9 +23,15 @@ export default function FicheDetails() {
   const [flashCardSelected, setFlashCardSelected] = useState(null);
   const selectedProfile = useSelector((state) => state.profile.selectedProfile);
   const selectedFiche = useSelector((state) => state.fiche.selectedFiche);
+  const trainingInProgress = useSelector((state) => state.training.flashcards);
   const ficheDetailed = useLiveQuery(() => getFiche(Number(id)), [id]);
   const flashcards = useLiveQuery(
     () => (selectedFiche ? getFlashcardsFromFiche(selectedFiche?.id) : []),
+    [selectedFiche],
+  );
+  const hasDesactive = flashcards?.some((e) => e.desactive); // boolean pour vérifier si au moins une flashcard est désactivée pour afficher le bouton
+  const selectedsFlashcards = useLiveQuery(
+    () => (selectedFiche ? getSelectedFlashcards(selectedFiche?.id) : []),
     [selectedFiche],
   );
   const dispatch = useDispatch();
@@ -30,10 +42,29 @@ export default function FicheDetails() {
     navigate("/fiches");
   };
 
+  const handleStartTrainning = () => {
+    const shuffled = [...selectedsFlashcards].sort(() => Math.random() - 0.5);
+    dispatch(setFlashcards(shuffled));
+    navigate(`/fiche/${id}/training`);
+  };
+
+  const handleSelectAllFlashcards = () => {
+    activeAllFlashcards(Number(id));
+    dispatch(
+      showAlert({
+        message: "Toutes les flashcards ont été sélectionnées.",
+        type: "success",
+      }),
+    );
+  };
+
   useEffect(() => {
     if (!selectedProfile) navigate("/");
     if (!selectedFiche) navigate("/fiches");
-  }, [selectedProfile, selectedFiche]);
+    if (trainingInProgress.length > 0) navigate(`/fiche/${id}/training`);
+  }, [selectedProfile, selectedFiche, trainingInProgress]);
+
+  if (trainingInProgress.length > 0) return null;
 
   return (
     <>
@@ -48,6 +79,21 @@ export default function FicheDetails() {
       >
         Retour
       </Button>
+
+      {flashcards?.length > 0 && (
+        <div className="mx-3">
+          <Button
+            size="sm"
+            color="primary"
+            radius="full"
+            className="my-2"
+            fullWidth
+            onPress={handleStartTrainning}
+          >
+            Démarrer l'entrainement
+          </Button>
+        </div>
+      )}
 
       {/* Information de la fiche sélectionnée */}
       <BoxContent>
@@ -64,12 +110,12 @@ export default function FicheDetails() {
 
       <h2 className="text-1xl font-bold text-center mt-5">Flashcards</h2>
 
-      <div className="flex justify-center mx-3">
+      <div className="flex flex-col justify-center mx-3">
         <Button
           size="sm"
-          color="primary"
+          color="secondary"
           radius="full"
-          className="my-2"
+          className="my-1"
           fullWidth
           onPress={() => {
             setFlashCardSelected(null);
@@ -78,6 +124,19 @@ export default function FicheDetails() {
         >
           Créer une flashcard
         </Button>
+        {hasDesactive && (
+          <Button
+            size="sm"
+            color="secondary"
+            radius="full"
+            variant="ghost"
+            className="my-1"
+            fullWidth
+            onPress={handleSelectAllFlashcards}
+          >
+            Sélectionner toutes les flashcards
+          </Button>
+        )}
       </div>
 
       {flashcards?.length > 0 ? (

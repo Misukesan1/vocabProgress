@@ -21,7 +21,7 @@ export default function Fiches() {
 
   useEffect(() => {
     if (selectedFiche) navigate(`/fiche/${selectedFiche.id}`);
-  }, []);
+  }, [selectedFiche]);
 
   if (selectedFiche) return null;
 
