@@ -14,6 +14,8 @@ import { useDispatch } from "react-redux";
 import { selectProfile } from "../features/profileSlice";
 import { showAlert } from "../features/alertSlice";
 
+// Modification en cours afficher les caractères restants en temps reel
+
 export default function ModalProfile({
   isOpen, // useDisclosure (heroUi)
   onOpenChange, // useDisclosure (heroUi)
