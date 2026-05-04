@@ -14,6 +14,8 @@ export default function Footer() {
 
   return (
     <div className="fixed bottom-0 w-full border-t border-divider bg-background flex justify-around items-center px-4 py-2">
+      
+      {/* Page Home */}
       <Button
         isIconOnly
         radius="full"
@@ -26,6 +28,8 @@ export default function Footer() {
           }
         />
       </Button>
+
+      {/* Page Fiches et entrainement */}
       <Button
         isIconOnly
         radius="full"
@@ -40,7 +44,9 @@ export default function Footer() {
           }
         />
       </Button>
-      <Button
+
+      {/* Page progrès */}
+      {/* <Button
         isIconOnly
         radius="full"
         variant="light"
@@ -53,7 +59,9 @@ export default function Footer() {
               : "text-foreground"
           }
         />
-      </Button>
+      </Button> */}
+
+      {/* Page Options */}
       <Button
         isIconOnly
         radius="full"

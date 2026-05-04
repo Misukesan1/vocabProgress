@@ -46,7 +46,9 @@ async function validationFlashcard({frontCard, backCard}) {
  * @returns {Promise<number>} l'id de la flashcard crée
  */
 export const addFlashcard = async (ficheId, frontCard, backCard, desactive = false) => {
-    if (await validationFlashcard({frontCard, backCard})) return db.flashcard.add({ficheId, frontCard, backCard, desactive})
+    const front = frontCard.trim().charAt(0).toUpperCase() + frontCard.trim().slice(1)
+    const back = backCard.trim().charAt(0).toUpperCase() + backCard.trim().slice(1)
+    if (await validationFlashcard({frontCard: front, backCard: back})) return db.flashcard.add({ficheId, frontCard: front, backCard: back, desactive})
 }
 
 /**
@@ -58,7 +60,9 @@ export const addFlashcard = async (ficheId, frontCard, backCard, desactive = fal
  * @returns {Promise<number>} 1 si la modification à trouvé un résultat
  */
 export const editFlashcard = async (id, frontCard, backCard) => {
-    if (await validationFlashcard({frontCard, backCard})) return db.flashcard.update(id, {frontCard, backCard})
+    const front = frontCard.trim().charAt(0).toUpperCase() + frontCard.trim().slice(1)
+    const back = backCard.trim().charAt(0).toUpperCase() + backCard.trim().slice(1)
+    if (await validationFlashcard({frontCard: front, backCard: back})) return db.flashcard.update(id, {frontCard: front, backCard: back})
 }
 
 /**
@@ -95,6 +99,15 @@ export const getFlashcardsFromFiche = (ficheId) => {
  */
 export const getSelectedFlashcards = (ficheId) => {
     return db.flashcard.where({ficheId: ficheId}).filter(f => !f.desactive).toArray()
+}
+
+/**
+ * Liste des flashcards qui sont désactivées
+ * @param {number} ficheId 
+ * @returns 
+ */
+export const getDeselectedFlashcards = (ficheId) => {
+    return db.flashcard.where({ficheId: ficheId}).filter(f => f.desactive).toArray()
 }
 
 /**

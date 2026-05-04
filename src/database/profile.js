@@ -42,11 +42,12 @@ async function checkProfileIfExist(name) {
  * @returns {Promise<number>} id du profil crée
  */
 export const addProfile = async (name) => {
-  if (await checkProfileIfExist(name))
+  const normalizedName = name.trim().charAt(0).toUpperCase() + name.trim().slice(1)
+  if (await checkProfileIfExist(normalizedName))
     throw new Error("Ce nom de profil existe déjà.");
 
-  validationNameProfile(name);
-  return db.profile.add({ name: name });
+  validationNameProfile(normalizedName);
+  return db.profile.add({ name: normalizedName });
 };
 
 /**
@@ -57,12 +58,13 @@ export const addProfile = async (name) => {
  * @returns {Promise<number>} 1 si la modification a été effectuée. sinon 0
  */
 export const editProfile = async (id, name) => {
+  const normalizedName = name.trim().charAt(0).toUpperCase() + name.trim().slice(1)
   if (!(await getProfile(id))) throw new Error("Profil introuvable.");
-  if (await checkProfileIfExist(name))
+  if (await checkProfileIfExist(normalizedName))
     throw new Error("Ce nom de profil existe déjà.");
 
-  validationNameProfile(name);
-  return db.profile.update(id, { name: name });
+  validationNameProfile(normalizedName);
+  return db.profile.update(id, { name: normalizedName });
 };
 
 /**

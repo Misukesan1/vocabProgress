@@ -33,13 +33,13 @@ export default function ModalFlashcard({
       if (isNewFlashCard) {
         await addFlashcard(ficheId, frontCard, backCard);
         dispatch(
-          showAlert({ message: "Nouvelle flashcard créée.", type: "success" }),
+          showAlert({ message: "Nouvelle carte créée.", type: "success" }),
         );
         onClose();
       } else {
         await editFlashcard(flashcard.id, frontCard, backCard);
         dispatch(
-          showAlert({ message: "Flashcard modifiée.", type: "success" }),
+          showAlert({ message: "Carte modifiée.", type: "success" }),
         );
         onClose();
       }
@@ -69,8 +69,8 @@ export default function ModalFlashcard({
           <Form className="contents" onSubmit={(e) => handleSubmit(e, onClose)}>
             <ModalHeader>
               {isNewFlashCard
-                ? "Nouvelle flashcard."
-                : "Modifier la flashcard."}
+                ? "Nouvelle carte."
+                : "Modifier la carte."}
             </ModalHeader>
             <ModalBody className="gap-3">
               <Textarea

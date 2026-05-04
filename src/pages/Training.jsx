@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import FlashCardTraining from "../componnents/FlashCardTraining";
 import BoxContent from "../componnents/BoxContent";
 import { Button, Progress } from "@heroui/react";
-import { ArrowLeft, ArrowRight, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import {
   clearTraining,
   deselectWord,
@@ -28,7 +28,9 @@ export default function Training() {
   const totalWordsDeselected = useSelector(
     (state) => state.training.totalDeselectWords,
   );
-  const progress = Math.round((currentIndex / flashcardsList.length) * 100);
+  const progress = Math.round(
+    ((currentIndex + 1) / flashcardsList.length) * 100,
+  );
 
   const selectedFiche = useSelector((state) => state.fiche.selectedFiche);
   const selectedsFlashcards = useLiveQuery(
@@ -62,7 +64,7 @@ export default function Training() {
       dispatch(deselectWord());
       dispatch(
         showAlert({
-          message: "Vous avez déselectionné la carte.",
+          message: "Vous maîtrisez cette carte.",
           type: "success",
         }),
       );
@@ -93,7 +95,7 @@ export default function Training() {
           navigate(`/fiche/${id}`);
         }}
       >
-        Arrêter l'entrainement
+        Quitter la révision
       </Button>
 
       {/* Information de la fiche sélectionnée à réviser et de l'entrainement en cours */}
@@ -106,12 +108,14 @@ export default function Training() {
           <p className="flex justify-between mb-1">
             Progression :{" "}
             <span className="font-light">
-              {currentIndex + 1}/{flashcardsList.length}
+              {flashcardsList[currentIndex] !== undefined
+                ? `${currentIndex + 1}/${flashcardsList.length}`
+                : `${flashcardsList.length}/${flashcardsList.length}`}
             </span>
           </p>
           <Progress
             size="md"
-            aria-label="Entrainement en cours ..."
+            aria-label="Révision en cours ..."
             className="max-w-md"
             value={progress}
           />
@@ -121,12 +125,11 @@ export default function Training() {
             Tour n° : <span className="font-light">{turnNumber + 1}</span>
           </p>
           <p>
-            Nombre total de mots désélectionnés :{" "}
+            Nombre de cartes maîtrisées :{" "}
             <span className="font-light">{totalWordsDeselected}</span>
           </p>
         </div>
       </BoxContent>
-
 
       {!isFlipped && flashcardsList[currentIndex] !== undefined && (
         <p className="text-center mt-2 font-light italic">
@@ -152,10 +155,10 @@ export default function Training() {
             color="secondary"
             radius="full"
             className="w-fit"
-            startContent={<X size={16} />}
+            startContent={<Check size={16} />}
             onPress={deselectFlashcard}
           >
-            Déselectionner la flashcard
+            Je maîtrise cette carte
           </Button>
           <Button
             size="sm"
@@ -165,7 +168,7 @@ export default function Training() {
             endContent={<ArrowRight size={16} />}
             onPress={onPress}
           >
-            Suivant
+            Carte suivante
           </Button>
         </div>
       )}
@@ -173,14 +176,14 @@ export default function Training() {
       {/* Affichage de fin d'entrainement pour relancer un tour ou si tous les mots ont été déselectionnés */}
       {flashcardsList[currentIndex] === undefined && (
         <BoxContent>
-          <p className="text-center font-bold">Entrainement terminé !</p>
+          <p className="text-center font-bold">Tour terminé !</p>
           {selectedsFlashcards?.length === 0 ? (
             <p className="text-center mb-3">
-              Vous avez déselectionné tous les mots de la liste.
+              Vous maîtrisez toutes les cartes de la liste.
             </p>
           ) : (
             <p className="text-center mb-3">
-              Vous avez déselectionné {wordsDeselected} mots sur un total de{" "}
+              Vous avez maîtrisé {wordsDeselected} cartes sur un total de{" "}
               {flashcardsList.length}.
             </p>
           )}
@@ -194,7 +197,7 @@ export default function Training() {
                 className="w-fit"
                 onPress={againTraining}
               >
-                Continuer
+                Continuer à réviser
               </Button>
             )}
             <Button
@@ -207,7 +210,7 @@ export default function Training() {
                 navigate(`/fiche/${id}`);
               }}
             >
-              Quitter
+              Arrêter
             </Button>
           </div>
         </BoxContent>

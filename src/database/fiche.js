@@ -68,10 +68,12 @@ async function checkFicheIfExist(name, profileId) {
  * @returns {Promise<number>} id de la fiche crée
  */
 export const addFiche = async (name, description, profileId) => {
-  if (await validationFiche({ name, description, profileId }))
+  const normalizedName = name.trim().charAt(0).toUpperCase() + name.trim().slice(1)
+  const normalizedDescription = description.trim().charAt(0).toUpperCase() + description.trim().slice(1)
+  if (await validationFiche({ name: normalizedName, description: normalizedDescription, profileId }))
     return db.fiche.add({
-      name: name,
-      description: description,
+      name: normalizedName,
+      description: normalizedDescription,
       profileId: profileId,
     });
 };
@@ -86,8 +88,10 @@ export const addFiche = async (name, description, profileId) => {
  * @returns {Promise<number>} 1 si la modification s'est bien effectuée | 0
  */
 export const editFiche = async (id, name, description, profileId) => {
-  if (await validationFiche({ id, name, description, profileId }))
-    return db.fiche.update(id, { name: name, description: description });
+  const normalizedName = name.trim().charAt(0).toUpperCase() + name.trim().slice(1)
+  const normalizedDescription = description.trim().charAt(0).toUpperCase() + description.trim().slice(1)
+  if (await validationFiche({ id, name: normalizedName, description: normalizedDescription, profileId }))
+    return db.fiche.update(id, { name: normalizedName, description: normalizedDescription });
 };
 
 /**

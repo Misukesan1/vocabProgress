@@ -16,6 +16,7 @@ import {
 import ModalFlashcard from "../componnents/ModalFlashcard";
 import { setFlashcards } from "../features/trainingSlice";
 import { showAlert } from "../features/alertSlice";
+import ModalConfirm from "../componnents/ModalConfirm";
 
 export default function FicheDetails() {
   const navigate = useNavigate();
@@ -36,6 +37,11 @@ export default function FicheDetails() {
   );
   const dispatch = useDispatch();
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const {
+    isOpen: isOpenConfirmModal,
+    onOpen: onOpenConfirmModal,
+    onOpenChange: onOpenChangeConfirmModal
+  } = useDisclosure();
 
   const handleBackButton = () => {
     dispatch(selectFiche(null));
@@ -90,27 +96,38 @@ export default function FicheDetails() {
             fullWidth
             onPress={handleStartTrainning}
           >
-            Démarrer l'entrainement
+            Démarrer la révision
           </Button>
         </div>
       )}
 
       {/* Information de la fiche sélectionnée */}
-      <BoxContent>
-        <h2 className="text-2xl font-bold text-center">
-          {ficheDetailed?.name}
-        </h2>
-
-        {ficheDetailed?.description && (
-          <p className="text-sm text-foreground/60 text-center mt-1">
+<BoxContent>
+    <h2 className="text-2xl font-bold text-center">
+        {ficheDetailed?.name}
+    </h2>
+    {ficheDetailed?.description && (
+        <p className="text-sm text-foreground/60 text-center mt-1">
             {ficheDetailed?.description}
-          </p>
-        )}
-      </BoxContent>
+        </p>
+    )}
+    <div className="flex justify-around mt-3">
+        <div className="flex flex-col items-center">
+            <p className="text-xl font-bold text-warning">{flashcards?.filter(f => !f.desactive).length}</p>
+            <p className="text-xs text-foreground/60">À apprendre</p>
+        </div>
+        <div className="flex flex-col items-center">
+            <p className="text-xl font-bold text-success">{flashcards?.filter(f => f.desactive).length}</p>
+            <p className="text-xs text-foreground/60">Maîtrisées</p>
+        </div>
+        <div className="flex flex-col items-center">
+            <p className="text-xl font-bold text-primary">{flashcards?.length}</p>
+            <p className="text-xs text-foreground/60">Total</p>
+        </div>
+    </div>
+</BoxContent>
 
-      <h2 className="text-1xl font-bold text-center mt-5">Flashcards</h2>
-
-      <div className="flex flex-col justify-center mx-3">
+      <div className="flex flex-col justify-center mx-3 mt-3">
         <Button
           size="sm"
           color="secondary"
@@ -122,7 +139,7 @@ export default function FicheDetails() {
             onOpen();
           }}
         >
-          Créer une flashcard
+          Créer une carte
         </Button>
         {hasDesactive && (
           <Button
@@ -132,9 +149,9 @@ export default function FicheDetails() {
             variant="ghost"
             className="my-1"
             fullWidth
-            onPress={handleSelectAllFlashcards}
+            onPress={onOpenConfirmModal}
           >
-            Sélectionner toutes les flashcards
+            Remettre toutes les cartes en révision
           </Button>
         )}
       </div>
@@ -152,7 +169,7 @@ export default function FicheDetails() {
         ))
       ) : (
         <BoxContent>
-          <p className="text-center">Aucunes flashcards</p>
+          <p className="text-center">Aucunes cartes</p>
         </BoxContent>
       )}
 
@@ -161,6 +178,13 @@ export default function FicheDetails() {
         onOpenChange={onOpenChange}
         flashcard={flashCardSelected}
         ficheId={Number(id)}
+      />
+
+      <ModalConfirm
+        isOpen={isOpenConfirmModal}
+        onOpenChange={onOpenChangeConfirmModal}
+        message={"Etes-vous sur de vouloir remettre toutes les cartes en révision ?"}
+        onConfirm={handleSelectAllFlashcards}
       />
     </>
   );

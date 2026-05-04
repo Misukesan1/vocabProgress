@@ -8,7 +8,7 @@ import {
   Input,
   Form,
 } from "@heroui/react";
-import { addProfile, editProfile } from "../database/profile";
+import { addProfile, editProfile, getProfile } from "../database/profile";
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { selectProfile } from "../features/profileSlice";
@@ -47,8 +47,9 @@ export default function ModalProfile({
     } else {
       try {
         await editProfile(profile.id, name);
+        const updatedProfile = await getProfile(profile.id)
         dispatch(showAlert({ message: "Profil modifié.", type: "success" }));
-        dispatch(selectProfile({ ...profile, name: name }));
+        dispatch(selectProfile(updatedProfile));
         onClose();
       } catch (error) {
         setErrorNameMessage(error.message);
