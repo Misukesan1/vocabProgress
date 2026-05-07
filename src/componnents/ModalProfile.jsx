@@ -25,9 +25,10 @@ export default function ModalProfile({
 
   const [errorNameMessage, setErrorNameMessage] = useState("");
   const titleModal = !isNewProfile
-  ? "Modifier le profil."
-  : "Créer un nouveau profil.";
+  ? "Modifier la Collection."
+  : "Créer une nouvelle Collection.";
   const textButtonSubmit = !isNewProfile ? "Modifier" : "Créer";
+  const [nameValue, setNameValue] = useState(isNewProfile ? "" : profile?.name || "")
   
   const dispatch = useDispatch();
 
@@ -40,7 +41,7 @@ export default function ModalProfile({
       try {
         await addProfile(name);
         dispatch(
-          showAlert({ message: "Nouveau profil créé.", type: "success" }),
+          showAlert({ message: "Nouvelle Collection créée.", type: "success" }),
         );
         onClose();
       } catch (error) {
@@ -50,7 +51,7 @@ export default function ModalProfile({
       try {
         await editProfile(profile.id, name);
         const updatedProfile = await getProfile(profile.id)
-        dispatch(showAlert({ message: "Profil modifié.", type: "success" }));
+        dispatch(showAlert({ message: "Collection modifiée.", type: "success" }));
         dispatch(selectProfile(updatedProfile));
         onClose();
       } catch (error) {
@@ -61,7 +62,8 @@ export default function ModalProfile({
 
   // Effacer les erreurs lorsque le modal s'ouvre
   useEffect(() => {
-    setErrorNameMessage("");
+    setErrorNameMessage("")
+    setNameValue("");
   }, [isOpen]);
 
   return (
@@ -79,7 +81,7 @@ export default function ModalProfile({
             <ModalHeader>{titleModal}</ModalHeader>
             <ModalBody>
               <Input
-                label="Nom du profil"
+                label="Nom de la Collection"
                 isInvalid={errorNameMessage.length > 0}
                 errorMessage={errorNameMessage}
                 onChange={() => setErrorNameMessage("")}
@@ -87,6 +89,9 @@ export default function ModalProfile({
                   if (value.length > 25) return "Maximum 25 caractères.";
                 }}
                 defaultValue={isNewProfile ? "" : profile?.name}
+                description={`${nameValue.length}/25`}
+                onValueChange={setNameValue}
+                maxLength={25}
               />
             </ModalBody>
             <ModalFooter>

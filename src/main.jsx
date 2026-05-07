@@ -10,7 +10,7 @@ import "./index.css";
 
 createRoot(document.getElementById("root")).render(
   <HeroUIProvider>
-    <NextThemesProvider attribute="class" defaultTheme="system">
+    <NextThemesProvider attribute="class" defaultTheme="light">
       <Provider store={store}>
         <RouterProvider router={router} />
       </Provider>

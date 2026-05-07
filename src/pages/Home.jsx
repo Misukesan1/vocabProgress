@@ -45,14 +45,14 @@ export default function Home() {
       {/* Aucun profil crée */}
       {profils?.length === 0 && (
         <BoxContent>
-          <p className="text-center">Aucuns profils trouvés.</p>
+          <p className="text-center">Aucunes Collections trouvées.</p>
           <Button
             onPress={onOpenProfile}
             color="primary"
             radius="full"
             className="mt-2 mx-auto px-6"
           >
-            Nouveau profil
+            Nouvelle Collection
           </Button>
         </BoxContent>
       )}
@@ -60,7 +60,7 @@ export default function Home() {
       {/* Aucun profil sélectionné */}
       {!selectedProfile && profils?.length > 0 && (
         <BoxContent>
-          <p className="text-center">Sélectionnez un profil</p>
+          <p className="text-center">Sélectionnez une Collection</p>
           <Dropdown>
             <DropdownTrigger>
               <Button radius="full" color="primary" size="sm" className="mt-2">
@@ -94,7 +94,7 @@ export default function Home() {
             radius="full"
             className="mt-2"
           >
-            Créer un nouveau profil
+            Créer une nouvelle Collection
           </Button>
         </BoxContent>
       )}
@@ -131,7 +131,7 @@ export default function Home() {
           </div>
 
           <BoxContent>
-            <p>Informations du profil.</p>
+            <p>Informations de la Collection.</p>
             {/* a remplir plus tard */}
           </BoxContent>
 
@@ -154,7 +154,7 @@ export default function Home() {
             radius="full"
             className="mt-2"
           >
-            Créer un nouveau profil
+            Créer une nouvelle Collection
           </Button>
         </BoxContent>
       )}
@@ -169,11 +169,11 @@ export default function Home() {
       <ModalConfirm
         isOpen={isOpenConfirm}
         onOpenChange={onOpenChangeConfirm}
-        message={`Etes-vous sur de vouloir supprimer ce profil "${selectedProfile?.name}" ?`}
+        message={`Etes-vous sur de vouloir supprimer cette Collection "${selectedProfile?.name}" ?`}
         onConfirm={() => {
           deleteProfile(selectedProfile.id);
           dispatch(selectProfile(null));
-          dispatch(showAlert({ message: "Profil supprimé.", type: "success" }));
+          dispatch(showAlert({ message: "Collection supprimée.", type: "success" }));
         }}
       />
     </>

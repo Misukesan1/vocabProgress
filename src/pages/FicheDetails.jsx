@@ -86,7 +86,7 @@ export default function FicheDetails() {
         Retour
       </Button>
 
-      {flashcards?.length > 0 && (
+      {selectedsFlashcards?.length > 0 && (
         <div className="mx-3">
           <Button
             size="sm"

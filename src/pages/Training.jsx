@@ -17,6 +17,7 @@ import {
 } from "../database/flashcard";
 import { useLiveQuery } from "dexie-react-hooks";
 import { showAlert } from "../features/alertSlice";
+import { useEffect, useState } from "react";
 
 export default function Training() {
   const { id } = useParams();
@@ -38,6 +39,11 @@ export default function Training() {
     [selectedFiche],
   );
 
+  const [sessionStart] = useState(new Date()); // date de début de session, ne change jamais
+  const [turnStart, setTurnStart] = useState(new Date()); // date de début du tour, se remet à jour
+  const [formatedTimeTurn, setFormattedTimeTurn] = useState("");
+  const [formatedTimeSession, setFormattedTimeSession] = useState("");
+  const [endTraining, setEndTraining] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -46,6 +52,25 @@ export default function Training() {
    */
   const onPress = () => {
     if (isFlipped) {
+      if (currentIndex === flashcardsList.length - 1) {
+        const now = new Date();
+
+        // temps du tour
+        const diffTurn = now - turnStart;
+        const secTurn = Math.floor((diffTurn / 1000) % 60);
+        const minTurn = Math.floor(diffTurn / 1000 / 60);
+        setFormattedTimeTurn(
+          `${minTurn}:${secTurn.toString().padStart(2, "0")}`,
+        );
+
+        // temps total de la session
+        const diffSession = now - sessionStart;
+        const secSession = Math.floor((diffSession / 1000) % 60);
+        const minSession = Math.floor(diffSession / 1000 / 60);
+        setFormattedTimeSession(
+          `${minSession}:${secSession.toString().padStart(2, "0")}`,
+        );
+      }
       dispatch(flipCard(false));
       dispatch(incrementCurrentIndex());
     } else {
@@ -62,6 +87,7 @@ export default function Training() {
       dispatch(flipCard(false));
       dispatch(incrementCurrentIndex());
       dispatch(deselectWord());
+      if (selectedsFlashcards?.length === 1) setEndTraining(true);
       dispatch(
         showAlert({
           message: "Vous maîtrisez cette carte.",
@@ -77,6 +103,7 @@ export default function Training() {
    * clic sur le bouton continuer pour commencer un nouveau tour
    */
   const againTraining = () => {
+    setTurnStart(new Date());
     const shuffled = [...selectedsFlashcards].sort(() => Math.random() - 0.5);
     dispatch(nextRoundTraining(shuffled));
   };
@@ -92,6 +119,7 @@ export default function Training() {
         startContent={<ArrowLeft size={16} />}
         onPress={() => {
           dispatch(clearTraining());
+          // setEndTraining(false)
           navigate(`/fiche/${id}`);
         }}
       >
@@ -116,7 +144,7 @@ export default function Training() {
           <Progress
             size="md"
             aria-label="Révision en cours ..."
-            className="max-w-md"
+            className="w-full"
             value={progress}
           />
         </div>
@@ -176,20 +204,28 @@ export default function Training() {
       {/* Affichage de fin d'entrainement pour relancer un tour ou si tous les mots ont été déselectionnés */}
       {flashcardsList[currentIndex] === undefined && (
         <BoxContent>
-          <p className="text-center font-bold">Tour terminé !</p>
-          {selectedsFlashcards?.length === 0 ? (
-            <p className="text-center mb-3">
-              Vous maîtrisez toutes les cartes de la liste.
-            </p>
+          {selectedsFlashcards?.length === 0 || endTraining ? (
+            <>
+              <p className="text-center font-bold">Révision arrêtée.</p>
+              <p className="text-center mb-3">
+                Temps total de la révision : {formatedTimeSession}
+              </p>
+            </>
           ) : (
-            <p className="text-center mb-3">
-              Vous avez maîtrisé {wordsDeselected} cartes sur un total de{" "}
-              {flashcardsList.length}.
-            </p>
+            <>
+              <p className="text-center font-bold">Tour terminé !</p>
+              <p className="text-center mb-3">
+                Vous avez maîtrisé {wordsDeselected} cartes sur un total de{" "}
+                {flashcardsList.length}.
+              </p>
+              <p className="text-center mb-3">
+                Temps total de la révision : {formatedTimeSession}
+              </p>
+            </>
           )}
 
           <div className="flex justify-center gap-3">
-            {selectedsFlashcards?.length > 0 && (
+            {selectedsFlashcards?.length > 0 && !endTraining && (
               <Button
                 size="sm"
                 color="primary"
@@ -206,11 +242,12 @@ export default function Training() {
               radius="full"
               className="w-fit"
               onPress={() => {
+                if (endTraining) navigate(`/fiche/${id}`);
                 dispatch(clearTraining());
-                navigate(`/fiche/${id}`);
+                setEndTraining(true);
               }}
             >
-              Arrêter
+              {endTraining ? "Quitter la révision" : "Arrêter"}
             </Button>
           </div>
         </BoxContent>

@@ -18,6 +18,8 @@ export default function ModalFiche({ isOpen, onOpenChange, fiche = null }) {
     
   const isNewFiche = fiche === null;
   const selectedProfile = useSelector((state) => state.profile.selectedProfile);
+  const [name, setName] = useState(isNewFiche ? "" : fiche?.name || "")
+  const [description, setDescription] = useState(isNewFiche ? "" : fiche?.description || "")
   const [errorNameMessage, setErrorNameMessage] = useState("");
   const [errorDescriptionMessage, setErrorDescriptionMessage] = useState("");
 
@@ -49,6 +51,8 @@ export default function ModalFiche({ isOpen, onOpenChange, fiche = null }) {
   useEffect(() => {
     setErrorNameMessage("");
     setErrorDescriptionMessage("");
+    setName(isNewFiche ? "" : fiche?.name || "")
+    setDescription(isNewFiche ? "" : fiche?.description || "")
   }, [isOpen]);
 
   return (
@@ -72,6 +76,9 @@ export default function ModalFiche({ isOpen, onOpenChange, fiche = null }) {
                 defaultValue={isNewFiche ? "" : fiche?.name}
                 isInvalid={errorNameMessage.length > 0}
                 errorMessage={errorNameMessage}
+                description={`${name.length}/50`}
+                onValueChange={setName}
+                maxLength={50}
                 onChange={() => setErrorNameMessage("")}
               />
               <Textarea
@@ -79,6 +86,9 @@ export default function ModalFiche({ isOpen, onOpenChange, fiche = null }) {
                 defaultValue={isNewFiche ? "" : fiche?.description}
                 isInvalid={errorDescriptionMessage.length > 0}
                 errorMessage={errorDescriptionMessage}
+                description={`${description.length}/500`}
+                onValueChange={setDescription}
+                maxLength={500}
                 onChange={() => setErrorDescriptionMessage("")}
               />
             </ModalBody>

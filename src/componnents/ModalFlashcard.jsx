@@ -20,6 +20,8 @@ export default function ModalFlashcard({
   ficheId,
 }) {
   const isNewFlashCard = flashcard === null;
+  const [frontCard, setFrontCard] = useState(isNewFlashCard ? "" : flashcard?.frontCard || "")
+  const [backCard, setBackCard] = useState(isNewFlashCard ? "" : flashcard?.backCard || "")
   const [errorFrontCardMessage, setErrorFrontCardMessage] = useState("");
   const [errorBackCardMessage, setErrorBackCardMessage] = useState("");
   const dispatch = useDispatch();
@@ -53,6 +55,8 @@ export default function ModalFlashcard({
   useEffect(() => {
     setErrorFrontCardMessage("");
     setErrorBackCardMessage("");
+    setFrontCard(isNewFlashCard ? "" : flashcard?.frontCard || "")
+    setBackCard(isNewFlashCard ? "" : flashcard?.backCard || "")
   }, [isOpen]);
 
   return (
@@ -79,6 +83,9 @@ export default function ModalFlashcard({
                 isInvalid={errorFrontCardMessage.length > 0}
                 errorMessage={errorFrontCardMessage}
                 defaultValue={isNewFlashCard ? "" : flashcard?.frontCard}
+                description={`${frontCard.length}/1000`}
+                onValueChange={setFrontCard}
+                maxLength={1000}
               />
               <Textarea
                 label="Verso"
@@ -86,6 +93,9 @@ export default function ModalFlashcard({
                 isInvalid={errorBackCardMessage.length > 0}
                 errorMessage={errorBackCardMessage}
                 defaultValue={isNewFlashCard ? "" : flashcard?.backCard}
+                description={`${backCard.length}/1000`}
+                onValueChange={setBackCard}
+                maxLength={1000}
               />
             </ModalBody>
             <ModalFooter>
