@@ -10,13 +10,15 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import {
   activeAllFlashcards,
+  getErrorsFlashcards,
   getFlashcardsFromFiche,
   getSelectedFlashcards,
 } from "../database/flashcard";
 import ModalFlashcard from "../componnents/ModalFlashcard";
-import { setFlashcards } from "../features/trainingSlice";
+import { setFlashcards, setTrainingMode } from "../features/trainingSlice";
 import { showAlert } from "../features/alertSlice";
 import ModalConfirm from "../componnents/ModalConfirm";
+import ModalTrainingChoice from "../componnents/ModalTrainingChoice";
 
 export default function FicheDetails() {
   const navigate = useNavigate();
@@ -35,6 +37,7 @@ export default function FicheDetails() {
     () => (selectedFiche ? getSelectedFlashcards(selectedFiche?.id) : []),
     [selectedFiche],
   );
+  const difficileFlashcards = useLiveQuery(() => getErrorsFlashcards(Number(id)))
   const dispatch = useDispatch();
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const {
@@ -42,6 +45,10 @@ export default function FicheDetails() {
     onOpen: onOpenConfirmModal,
     onOpenChange: onOpenChangeConfirmModal
   } = useDisclosure();
+  const { 
+    isOpen: isOpenTrainingStart,
+    onOpen: onOpenTrainingStart,
+    onOpenChange: onOpenChangeTrainingStart} = useDisclosure()
 
   const handleBackButton = () => {
     dispatch(selectFiche(null));
@@ -51,14 +58,22 @@ export default function FicheDetails() {
   const handleStartTrainning = () => {
     const shuffled = [...selectedsFlashcards].sort(() => Math.random() - 0.5);
     dispatch(setFlashcards(shuffled));
+    dispatch(setTrainingMode("all"))
     navigate(`/fiche/${id}/training`);
   };
+
+  const handleHardStartTraining = () => {
+    const shuffled = [...difficileFlashcards].sort(() => Math.random() - 0.5);
+    dispatch(setFlashcards(shuffled));
+    dispatch(setTrainingMode("hard"))
+    navigate(`/fiche/${id}/training`);
+  }
 
   const handleSelectAllFlashcards = () => {
     activeAllFlashcards(Number(id));
     dispatch(
       showAlert({
-        message: "Toutes les flashcards ont été sélectionnées.",
+        message: "Toutes les cartes sont maintenant à revoir.",
         type: "success",
       }),
     );
@@ -94,7 +109,7 @@ export default function FicheDetails() {
             radius="full"
             className="my-2"
             fullWidth
-            onPress={handleStartTrainning}
+            onPress={onOpenTrainingStart}
           >
             Démarrer la révision
           </Button>
@@ -115,6 +130,10 @@ export default function FicheDetails() {
         <div className="flex flex-col items-center">
             <p className="text-xl font-bold text-warning">{flashcards?.filter(f => !f.desactive).length}</p>
             <p className="text-xs text-foreground/60">À apprendre</p>
+        </div>
+        <div className="flex flex-col items-center">
+            <p className="text-xl font-bold text-danger">{difficileFlashcards?.length}</p>
+            <p className="text-xs text-foreground/60">À revoir</p>
         </div>
         <div className="flex flex-col items-center">
             <p className="text-xl font-bold text-success">{flashcards?.filter(f => f.desactive).length}</p>
@@ -172,6 +191,14 @@ export default function FicheDetails() {
           <p className="text-center">Aucunes cartes</p>
         </BoxContent>
       )}
+
+      <ModalTrainingChoice 
+        onAllCards={handleStartTrainning}
+        onHardCards={handleHardStartTraining}
+        onOpenChange={onOpenChangeTrainingStart}
+        isOpen={isOpenTrainingStart}
+        hardCards={difficileFlashcards}
+      />
 
       <ModalFlashcard
         isOpen={isOpen}

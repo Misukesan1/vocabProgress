@@ -14,16 +14,23 @@ export const trainingSlice = createSlice({
     deselectWords: 0,
     totalDeselectWords: 0,
     currentIndex: 0,
+    trainingMode: null
   },
   reducers: {
     setFlashcards: (state, action) => {
       state.flashcards = action.payload;
+    },
+    setTrainingMode: (state, action) => {
+      state.trainingMode = action.payload
     },
     incrementCurrentIndex: (state) => {
       state.currentIndex += 1;
     },
     flipCard: (state, action) => {
       state.isFliped = action.payload;
+    },
+    reverseCard: (state) => {
+      state.isReversed = !state.isReversed
     },
     clearTraining: (state) => {
       state.flashcards = [];
@@ -33,6 +40,7 @@ export const trainingSlice = createSlice({
       state.deselectWords = 0;
       state.totalDeselectWords = 0;
       state.currentIndex = 0;
+      state.trainingMode = null
     },
     nextRoundTraining: (state, action) => {
       state.flashcards = action.payload;
@@ -57,6 +65,8 @@ export const {
   incrementCurrentIndex,
   nextRoundTraining,
   deselectWord,
+  reverseCard,
+  setTrainingMode
 } = trainingSlice.actions;
 
 export default trainingSlice.reducer;

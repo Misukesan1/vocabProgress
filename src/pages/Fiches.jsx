@@ -43,7 +43,7 @@ export default function Fiches() {
       ) : (
         <BoxContent>
           <p className="text-center">
-            Commencez par créer ou sélectionner un profil.
+            Commencez par créer ou sélectionner une collection.
           </p>
           <Button
             onPress={() => navigate("/")}

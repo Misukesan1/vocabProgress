@@ -2,30 +2,35 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router";
 import FlashCardTraining from "../componnents/FlashCardTraining";
 import BoxContent from "../componnents/BoxContent";
-import { Button, Progress } from "@heroui/react";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { Button, Progress, Switch } from "@heroui/react";
+import { ArrowLeft, BadgeCheck, BookAlert, CheckCheck } from "lucide-react";
 import {
   clearTraining,
   deselectWord,
   flipCard,
   incrementCurrentIndex,
   nextRoundTraining,
+  reverseCard,
 } from "../features/trainingSlice";
 import {
+  getErrorsFlashcards,
   getSelectedFlashcards,
+  incrementError,
   toggleStatusFlashcard,
 } from "../database/flashcard";
 import { useLiveQuery } from "dexie-react-hooks";
 import { showAlert } from "../features/alertSlice";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function Training() {
   const { id } = useParams();
   const flashcardsList = useSelector((state) => state.training.flashcards);
   const currentIndex = useSelector((state) => state.training.currentIndex);
   const isFlipped = useSelector((state) => state.training.isFliped);
+  const isReversed = useSelector((state) => state.training.isReversed);
   const turnNumber = useSelector((state) => state.training.tours);
   const wordsDeselected = useSelector((state) => state.training.deselectWords);
+  const trainingMode = useSelector((state) => state.training.trainingMode)
   const totalWordsDeselected = useSelector(
     (state) => state.training.totalDeselectWords,
   );
@@ -34,11 +39,17 @@ export default function Training() {
   );
 
   const selectedFiche = useSelector((state) => state.fiche.selectedFiche);
-  const selectedsFlashcards = useLiveQuery(
-    () => (selectedFiche ? getSelectedFlashcards(selectedFiche?.id) : []),
-    [selectedFiche],
-  );
+  // const selectedsFlashcards = useLiveQuery(
+  //   () => (selectedFiche ? getSelectedFlashcards(selectedFiche?.id) : []),
+  //   [selectedFiche],
+  // );
+  const selectedsFlashcards = useLiveQuery(() => {
+    if (!selectedFiche) return []
+    if (trainingMode === "hard") return getErrorsFlashcards(selectedFiche?.id)
+      return getSelectedFlashcards(selectedFiche?.id)
+  }, [selectedFiche, trainingMode])
 
+  const [toggleReversed, setToggleReversed] = useState(isReversed)
   const [sessionStart] = useState(new Date()); // date de début de session, ne change jamais
   const [turnStart, setTurnStart] = useState(new Date()); // date de début du tour, se remet à jour
   const [formatedTimeTurn, setFormattedTimeTurn] = useState("");
@@ -78,6 +89,11 @@ export default function Training() {
     }
   };
 
+  const reverseCardTraining = () => {
+    dispatch(reverseCard())
+    setToggleReversed(!toggleReversed)
+  }
+
   const deselectFlashcard = () => {
     try {
       toggleStatusFlashcard(
@@ -99,13 +115,32 @@ export default function Training() {
     }
   };
 
+  const pressBtnARevoir = () => {
+    try {
+      incrementError(flashcardsList[currentIndex].id)
+      dispatch(
+        showAlert({
+          message: `Vous marquez cette carte comme "difficile".`,
+          type: "success",
+        }),
+      );
+      dispatch(flipCard(false));
+      dispatch(incrementCurrentIndex());
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
   /**
    * clic sur le bouton continuer pour commencer un nouveau tour
    */
   const againTraining = () => {
     setTurnStart(new Date());
-    const shuffled = [...selectedsFlashcards].sort(() => Math.random() - 0.5);
-    dispatch(nextRoundTraining(shuffled));
+    const cards = trainingMode === "hard" 
+        ? selectedsFlashcards.filter(f => f.errors > 0)
+        : selectedsFlashcards
+    const shuffled = [...cards].sort(() => Math.random() - 0.5)
+    dispatch(nextRoundTraining(shuffled))
   };
 
   return (
@@ -130,7 +165,7 @@ export default function Training() {
       <BoxContent>
         <h2 className="text-center">
           Révision de la fiche :{" "}
-          <span className="font-bold">{selectedFiche.name}</span>
+          <span className="font-bold">{selectedFiche?.name}</span>
         </h2>
         <div className="mt-1">
           <p className="flex justify-between mb-1">
@@ -159,6 +194,15 @@ export default function Training() {
         </div>
       </BoxContent>
 
+      {flashcardsList[currentIndex] !== undefined &&
+        <BoxContent>
+          <div className="flex flex-col justify-center items-center gap-1">
+            <Switch size="sm" isSelected={toggleReversed} onChange={reverseCardTraining} />
+            <p className="text-xs font-light">{toggleReversed ? "Face B / Face A" : "Face A / Face B"}</p>
+          </div>
+        </BoxContent>
+      }
+
       {!isFlipped && flashcardsList[currentIndex] !== undefined && (
         <p className="text-center mt-2 font-light italic">
           Cliquez sur la carte pour la retourner.
@@ -172,32 +216,35 @@ export default function Training() {
           backCard={flashcardsList[currentIndex]?.backCard}
           isFlipped={isFlipped}
           onPress={onPress}
+          isReversed={isReversed}
         />
       )}
 
       {/* Affichage des options lorsque la carte est retournée */}
       {isFlipped && (
-        <div className="flex justify-between items-center mx-3">
-          <Button
-            size="sm"
-            color="secondary"
-            radius="full"
-            className="w-fit"
-            startContent={<Check size={16} />}
-            onPress={deselectFlashcard}
-          >
-            Je maîtrise cette carte
-          </Button>
-          <Button
-            size="sm"
-            color="primary"
-            radius="full"
-            className="w-fit"
-            endContent={<ArrowRight size={16} />}
-            onPress={onPress}
-          >
-            Carte suivante
-          </Button>
+        <div className="w-60 grid grid-cols-3 mx-auto gap-2">
+
+          <div className="flex flex-col justify-center items-center">
+            <Button onPress={pressBtnARevoir} radius="full" isIconOnly variant="flat" color="danger">
+              <BookAlert />
+            </Button>
+            <p className="text-xs font-light">A revoir</p>
+          </div>
+
+          <div className="flex flex-col justify-center items-center">
+            <Button onPress={onPress} radius="full" isIconOnly variant="flat" color="primary">
+              <CheckCheck />
+            </Button>
+            <p className="text-xs font-light">Je connais</p>
+          </div>
+
+          <div className="flex flex-col justify-center items-center">
+            <Button onPress={deselectFlashcard} radius="full" isIconOnly variant="flat" color="success">
+              <BadgeCheck />
+            </Button>
+            <p className="text-xs font-light">Je maîtrise</p>
+          </div>
+
         </div>
       )}
 
@@ -225,7 +272,7 @@ export default function Training() {
           )}
 
           <div className="flex justify-center gap-3">
-            {selectedsFlashcards?.length > 0 && !endTraining && (
+            {(selectedsFlashcards?.length > 0 && !endTraining) && (
               <Button
                 size="sm"
                 color="primary"

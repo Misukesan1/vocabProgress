@@ -55,6 +55,11 @@ export default function FlashCard({ flashcard, onEdit }) {
           </div>
         </div>
         <div className="flex flex-col gap-1 justify-center items-center">
+          {flashcard?.errors > 0 &&
+            <Button size="sm" isDisabled isIconOnly variant="solid" color="danger" radius="full">{flashcard?.errors}</Button>
+          }
+        </div>
+        <div className="flex flex-col gap-1 justify-center items-center">
           <Button
             isIconOnly
             size="sm"

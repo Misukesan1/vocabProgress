@@ -34,8 +34,8 @@ export default function Header() {
             </Button>
           </DropdownTrigger>
           <DropdownMenu
-            aria-label="Profils"
-            emptyContent="Aucun profil créé"
+            aria-label="Collections"
+            emptyContent="Aucune collections"
             variant="light"
             color="primary"
           >

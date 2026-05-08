@@ -25,8 +25,8 @@ export default function ModalProfile({
 
   const [errorNameMessage, setErrorNameMessage] = useState("");
   const titleModal = !isNewProfile
-  ? "Modifier la Collection."
-  : "Créer une nouvelle Collection.";
+  ? "Modifier la collection."
+  : "Créer une nouvelle collection.";
   const textButtonSubmit = !isNewProfile ? "Modifier" : "Créer";
   const [nameValue, setNameValue] = useState(isNewProfile ? "" : profile?.name || "")
   
@@ -41,7 +41,7 @@ export default function ModalProfile({
       try {
         await addProfile(name);
         dispatch(
-          showAlert({ message: "Nouvelle Collection créée.", type: "success" }),
+          showAlert({ message: "Nouvelle collection créée.", type: "success" }),
         );
         onClose();
       } catch (error) {
@@ -81,7 +81,7 @@ export default function ModalProfile({
             <ModalHeader>{titleModal}</ModalHeader>
             <ModalBody>
               <Input
-                label="Nom de la Collection"
+                label="Nom de la collection"
                 isInvalid={errorNameMessage.length > 0}
                 errorMessage={errorNameMessage}
                 onChange={() => setErrorNameMessage("")}

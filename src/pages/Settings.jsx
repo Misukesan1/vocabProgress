@@ -13,7 +13,6 @@ export default function Settings() {
 
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
-  console.log(theme);
 
   const handleDeleteDatabase = async () => {
     await db.profile.clear();

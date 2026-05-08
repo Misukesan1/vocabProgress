@@ -5,6 +5,7 @@ export default function FlashCardTraining({
   backCard,
   isFlipped,
   onPress,
+  isReversed
 }) {
   return (
     <Card
@@ -15,7 +16,10 @@ export default function FlashCardTraining({
       className="my-5 mx-auto min-w-60 min-h-80 border border-divider/50 cursor-pointer"
     >
       <CardBody className="flex items-center justify-center">
-        <p className="text-center">{isFlipped ? backCard : frontCard}</p>
+        {isReversed  
+        ? (<p className="text-center text-2xl">{isFlipped ? frontCard : backCard}</p>)
+        : (<p className="text-center text-2xl">{isFlipped ? backCard : frontCard}</p>)
+        }
       </CardBody>
     </Card>
   );

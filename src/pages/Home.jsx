@@ -45,14 +45,14 @@ export default function Home() {
       {/* Aucun profil crée */}
       {profils?.length === 0 && (
         <BoxContent>
-          <p className="text-center">Aucunes Collections trouvées.</p>
+          <p className="text-center">Aucunes collections trouvées.</p>
           <Button
             onPress={onOpenProfile}
             color="primary"
             radius="full"
             className="mt-2 mx-auto px-6"
           >
-            Nouvelle Collection
+            Nouvelle collection
           </Button>
         </BoxContent>
       )}
@@ -60,7 +60,7 @@ export default function Home() {
       {/* Aucun profil sélectionné */}
       {!selectedProfile && profils?.length > 0 && (
         <BoxContent>
-          <p className="text-center">Sélectionnez une Collection</p>
+          <p className="text-center">Sélectionnez une collection</p>
           <Dropdown>
             <DropdownTrigger>
               <Button radius="full" color="primary" size="sm" className="mt-2">
@@ -69,7 +69,7 @@ export default function Home() {
             </DropdownTrigger>
             <DropdownMenu
               aria-label="Profils"
-              emptyContent="Aucun profil créé"
+              emptyContent="Aucune collections"
               variant="light"
               color="primary"
             >
@@ -94,7 +94,7 @@ export default function Home() {
             radius="full"
             className="mt-2"
           >
-            Créer une nouvelle Collection
+            Créer une nouvelle collection
           </Button>
         </BoxContent>
       )}
@@ -131,7 +131,7 @@ export default function Home() {
           </div>
 
           <BoxContent>
-            <p>Informations de la Collection.</p>
+            <p>Informations de la collection.</p>
             {/* a remplir plus tard */}
           </BoxContent>
 
@@ -154,7 +154,7 @@ export default function Home() {
             radius="full"
             className="mt-2"
           >
-            Créer une nouvelle Collection
+            Créer une nouvelle collection
           </Button>
         </BoxContent>
       )}
@@ -169,7 +169,7 @@ export default function Home() {
       <ModalConfirm
         isOpen={isOpenConfirm}
         onOpenChange={onOpenChangeConfirm}
-        message={`Etes-vous sur de vouloir supprimer cette Collection "${selectedProfile?.name}" ?`}
+        message={`Etes-vous sur de vouloir supprimer cette collection "${selectedProfile?.name}" ?`}
         onConfirm={() => {
           deleteProfile(selectedProfile.id);
           dispatch(selectProfile(null));
