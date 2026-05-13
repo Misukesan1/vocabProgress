@@ -1,11 +1,11 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useNavigate, useParams } from "react-router";
-import { getFiche } from "../database/fiche";
+import { deleteFiche, getFiche } from "../database/fiche";
 import BoxContent from "../componnents/BoxContent";
 import FlashCard from "../componnents/FlashCard";
 import { selectFiche } from "../features/ficheSlice";
 import { Button, useDisclosure } from "@heroui/react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Pencil, Trash } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import {
@@ -19,6 +19,7 @@ import { setFlashcards, setTrainingMode } from "../features/trainingSlice";
 import { showAlert } from "../features/alertSlice";
 import ModalConfirm from "../componnents/ModalConfirm";
 import ModalTrainingChoice from "../componnents/ModalTrainingChoice";
+import ModalFiche from "../componnents/ModalFiche";
 
 export default function FicheDetails() {
   const navigate = useNavigate();
@@ -39,6 +40,7 @@ export default function FicheDetails() {
   );
   const difficileFlashcards = useLiveQuery(() => getErrorsFlashcards(Number(id)))
   const dispatch = useDispatch();
+  const { isOpen: isOpenFicheModal, onOpen: onOpenFicheModal, onOpenChange: onOpenChangeFicheModal } = useDisclosure();
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const {
     isOpen: isOpenConfirmModal,
@@ -50,10 +52,29 @@ export default function FicheDetails() {
     onOpen: onOpenTrainingStart,
     onOpenChange: onOpenChangeTrainingStart} = useDisclosure()
 
+    const {
+    isOpen: isOpenConfirmFicheModal,
+    onClose: onCloseConfirmFicheModal,
+    onOpen: onOpenConfirmFicheModal,
+    onOpenChange: onOpenChangeConfirmFicheModal,
+  } = useDisclosure();
+
   const handleBackButton = () => {
     dispatch(selectFiche(null));
     navigate("/fiches");
   };
+
+    const handleDelete = async (fiche) => {
+      try {
+        await deleteFiche(fiche.id);
+        dispatch(selectFiche(null))
+        dispatch(showAlert({ message: "Fiche supprimée.", type: "success" }));
+        onCloseConfirmFicheModal();
+        navigate("/fiches");
+      } catch (error) {
+        console.log(error);
+      }
+    };
 
   const handleStartTrainning = () => {
     const shuffled = [...selectedsFlashcards].sort(() => Math.random() - 0.5);
@@ -118,14 +139,37 @@ export default function FicheDetails() {
 
       {/* Information de la fiche sélectionnée */}
 <BoxContent>
-    <h2 className="text-2xl font-bold text-center">
-        {ficheDetailed?.name}
-    </h2>
-    {ficheDetailed?.description && (
-        <p className="text-sm text-foreground/60 text-center mt-1">
-            {ficheDetailed?.description}
-        </p>
-    )}
+  <div className="flex justify-between items-start">
+    <div>
+      <h2 className="text-2xl font-bold">
+          {ficheDetailed?.name}
+      </h2>
+      {ficheDetailed?.description && (
+          <p className="text-sm text-foreground/60 mt-1">
+              {ficheDetailed?.description}
+          </p>
+      )}
+    </div>
+    <div className="flex flex-col gap-1">
+      <Button
+        size="sm"
+        isIconOnly
+        radius="full"
+        onPress={onOpenFicheModal}
+      >
+        <Pencil size={17} />
+      </Button>
+      <Button
+        size="sm"
+        isIconOnly
+        color="danger"
+        radius="full"
+        onPress={onOpenConfirmFicheModal}
+      >
+        <Trash size={17} />
+      </Button>
+    </div>
+  </div>
     <div className="flex justify-around mt-3">
         <div className="flex flex-col items-center">
             <p className="text-xl font-bold text-warning">{flashcards?.filter(f => !f.desactive).length}</p>
@@ -191,6 +235,15 @@ export default function FicheDetails() {
           <p className="text-center">Aucunes cartes</p>
         </BoxContent>
       )}
+
+      <ModalFiche isOpen={isOpenFicheModal} onOpenChange={onOpenChangeFicheModal} fiche={selectedFiche}/>
+
+      <ModalConfirm
+        isOpen={isOpenConfirmFicheModal}
+        onOpenChange={onOpenChangeConfirmFicheModal}
+        message={`Etes-vous sur de vouloir supprimer cette fiche "${selectedFiche?.name}" ? Cette action supprimera également les ${flashcards?.length} cartes associées et est irréversible.`}
+        onConfirm={() => handleDelete(selectedFiche, onCloseConfirmFicheModal)}
+      />
 
       <ModalTrainingChoice 
         onAllCards={handleStartTrainning}

@@ -45,8 +45,8 @@ async function validationFiche({ id = null, name, description, profileId }) {
 
 /**
  * Vérifie si le nom de la fiche existe déjà
- * @param {string} name 
- * @param {number} profileId 
+ * @param {string} name
+ * @param {number} profileId
  * @returns {Promise<boolean>}
  */
 async function checkFicheIfExist(name, profileId) {
@@ -62,16 +62,24 @@ async function checkFicheIfExist(name, profileId) {
 
 /**
  * Création d'une nouvelle fiche
- * @param {string} name 
- * @param {string} description 
- * @param {number} profileId 
+ * @param {string} name
+ * @param {string} description
+ * @param {number} profileId
  * @throws {Object} objet avec les erreurs de validation
  * @returns {Promise<number>} id de la fiche crée
  */
 export const addFiche = async (name, description, profileId) => {
-  const normalizedName = name.trim().charAt(0).toUpperCase() + name.trim().slice(1)
-  const normalizedDescription = description.trim().charAt(0).toUpperCase() + description.trim().slice(1)
-  if (await validationFiche({ name: normalizedName, description: normalizedDescription, profileId }))
+  const normalizedName =
+    name.trim().charAt(0).toUpperCase() + name.trim().slice(1);
+  const normalizedDescription =
+    description.trim().charAt(0).toUpperCase() + description.trim().slice(1);
+  if (
+    await validationFiche({
+      name: normalizedName,
+      description: normalizedDescription,
+      profileId,
+    })
+  )
     return db.fiche.add({
       name: normalizedName,
       description: normalizedDescription,
@@ -81,33 +89,45 @@ export const addFiche = async (name, description, profileId) => {
 
 /**
  * Modification d'une fiche
- * @param {number} id 
- * @param {string} name 
- * @param {string} description 
- * @param {number} profileId 
+ * @param {number} id
+ * @param {string} name
+ * @param {string} description
+ * @param {number} profileId
  * @throws {Object} Erreurs de validation
  * @returns {Promise<number>} 1 si la modification s'est bien effectuée | 0
  */
 export const editFiche = async (id, name, description, profileId) => {
-  const normalizedName = name.trim().charAt(0).toUpperCase() + name.trim().slice(1)
-  const normalizedDescription = description.trim().charAt(0).toUpperCase() + description.trim().slice(1)
-  if (await validationFiche({ id, name: normalizedName, description: normalizedDescription, profileId }))
-    return db.fiche.update(id, { name: normalizedName, description: normalizedDescription });
+  const normalizedName =
+    name.trim().charAt(0).toUpperCase() + name.trim().slice(1);
+  const normalizedDescription =
+    description.trim().charAt(0).toUpperCase() + description.trim().slice(1);
+  if (
+    await validationFiche({
+      id,
+      name: normalizedName,
+      description: normalizedDescription,
+      profileId,
+    })
+  )
+    return db.fiche.update(id, {
+      name: normalizedName,
+      description: normalizedDescription,
+    });
 };
 
 /**
  * Supprime une fiche
- * @param {number} id 
+ * @param {number} id
  * @returns {Promise<void>}
  */
 export const deleteFiche = async (id) => {
-  await db.flashcard.where({ficheId: id}).delete()
+  await db.flashcard.where({ ficheId: id }).delete();
   return db.fiche.delete(id);
 };
 
 /**
  * Information d'une fiche
- * @param {number} id 
+ * @param {number} id
  * @returns {Promise<Fiche|undefined>}
  */
 export const getFiche = (id) => {
@@ -116,18 +136,20 @@ export const getFiche = (id) => {
 
 /**
  * Liste de toutes le fiches d'un profil
- * @param {number} profileId 
+ * @param {number} profileId
  * @returns {Promise<Fiche[]>}
  */
 export const getFichesFromProfile = async (profileId) => {
   // return db.fiche.where({ profileId: profileId }).toArray();
   const data = await db.fiche.where({ profileId: profileId }).toArray();
-  for (const item of data) {
-    const countErrors = await getErrorsFlashcards(item.id)
-    item.countErrors = countErrors.length
-  }
+  const enrichedData = await Promise.all(
+    data.map(async (item) => {
+      const countErrors = await getErrorsFlashcards(item.id);
+      return { ...item, countErrors: countErrors.length };
+    }),
+  );
 
-  return data
+  return enrichedData;
 };
 
 /**

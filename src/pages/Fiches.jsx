@@ -17,6 +17,7 @@ export default function Fiches() {
     () => (selectProfile ? getFichesFromProfile(selectProfile?.id) : null),
     [selectProfile],
   );
+  const { isOpen: isOpenFicheModal, onOpen: onOpenFicheModal, onOpenChange: onOpenChangeFicheModal } = useDisclosure();
   const [filter, setFilter] = useState("recent")
   const [searchValue, setSearchValue] = useState("")
   const filteredFiche = fiches?.slice().filter((item) => {
@@ -29,7 +30,7 @@ export default function Fiches() {
     if (filter === "z-a") return b.name.localeCompare(a.name)
     if (filter === "difficiles") return b.countErrors - a.countErrors
   })
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,7 +45,7 @@ export default function Fiches() {
         <BoxContent>
           <p className="text-center">{fiches?.length} fiches.</p>
           <Button
-            onPress={onOpen}
+            onPress={onOpenFicheModal}
             size="sm"
             color="primary"
             radius="full"
@@ -84,7 +85,7 @@ export default function Fiches() {
         </BoxContent>
       }
 
-      <div className="mt-3">
+      <div className="mt-3 mx-3">
         {/* Affichage des fiches du profil sélectionné */}
         {selectProfile &&
           filteredFiche &&
@@ -99,7 +100,8 @@ export default function Fiches() {
           ))}
       </div>
 
-      <ModalFiche isOpen={isOpen} onOpenChange={onOpenChange} />
+      <ModalFiche isOpen={isOpenFicheModal} onOpenChange={onOpenChangeFicheModal}/>
+
     </>
   );
 }
