@@ -93,8 +93,10 @@ export default function FicheCard({ name, description, fiche }) {
           </div>
           </div>
 
-          <div>
-            <p className="text-xs font-light text-foreground">Nombre de cartes : <span className="font-semibold">{flashcards?.length}</span></p>
+          <div className="grid grid-cols-3">
+            <p className="text-sm font-light text-foreground">Cartes : <span className="font-semibold">{flashcards?.length}</span></p>
+            <p className="text-sm font-light text-foreground">A revoir : <span className="font-semibold text-danger">{fiche.countErrors}</span></p>
+            <p className="text-sm font-light text-foreground">Maîtrisées : <span className="font-semibold text-success">{flashcards?.filter((flashcard) => flashcard.desactive).length}</span></p>
           </div>
         </CardBody>
       </Card>

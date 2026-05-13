@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { getErrorsFlashcards } from "./flashcard";
 
 /**
  * @typedef {Object} Fiche
@@ -118,8 +119,15 @@ export const getFiche = (id) => {
  * @param {number} profileId 
  * @returns {Promise<Fiche[]>}
  */
-export const getFichesFromProfile = (profileId) => {
-  return db.fiche.where({ profileId: profileId }).toArray();
+export const getFichesFromProfile = async (profileId) => {
+  // return db.fiche.where({ profileId: profileId }).toArray();
+  const data = await db.fiche.where({ profileId: profileId }).toArray();
+  for (const item of data) {
+    const countErrors = await getErrorsFlashcards(item.id)
+    item.countErrors = countErrors.length
+  }
+
+  return data
 };
 
 /**

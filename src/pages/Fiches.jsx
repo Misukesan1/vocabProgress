@@ -7,7 +7,8 @@ import BoxContent from "../componnents/BoxContent";
 import ModalFiche from "../componnents/ModalFiche";
 import { useNavigate } from "react-router";
 import { ArrowLeft } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import FicheFilter from "../componnents/FicheFilter";
 
 export default function Fiches() {
   const selectProfile = useSelector((state) => state.profile.selectedProfile);
@@ -16,6 +17,18 @@ export default function Fiches() {
     () => (selectProfile ? getFichesFromProfile(selectProfile?.id) : null),
     [selectProfile],
   );
+  const [filter, setFilter] = useState("recent")
+  const [searchValue, setSearchValue] = useState("")
+  const filteredFiche = fiches?.slice().filter((item) => {
+    return item.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.description?.toLowerCase().includes(searchValue.toLowerCase())
+  }).sort((a,b) => {
+    if (filter === "recent") return b.id - a.id
+    if (filter === "ancien") return a.id - b.id
+    if (filter === "a-z") return a.name.localeCompare(b.name)
+    if (filter === "z-a") return b.name.localeCompare(a.name)
+    if (filter === "difficiles") return b.countErrors - a.countErrors
+  })
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const navigate = useNavigate();
 
@@ -58,12 +71,25 @@ export default function Fiches() {
         </BoxContent>
       )}
 
+      {/* Filtre de recherche */}
+      {fiches?.length > 0 &&
+        <BoxContent>
+          <FicheFilter 
+            ficheList={fiches}
+            filter={filter} 
+            onFilterChange={setFilter}
+            searchValue={searchValue}
+            onSearchValueChange={setSearchValue}
+          />
+        </BoxContent>
+      }
+
       <div className="mt-3">
         {/* Affichage des fiches du profil sélectionné */}
         {selectProfile &&
-          fiches &&
-          fiches.length > 0 &&
-          fiches?.map((fiche) => (
+          filteredFiche &&
+          filteredFiche.length > 0 &&
+          filteredFiche?.map((fiche) => (
             <FicheCard
               key={fiche.id}
               name={fiche.name}
