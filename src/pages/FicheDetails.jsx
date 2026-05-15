@@ -20,6 +20,7 @@ import { showAlert } from "../features/alertSlice";
 import ModalConfirm from "../componnents/ModalConfirm";
 import ModalTrainingChoice from "../componnents/ModalTrainingChoice";
 import ModalFiche from "../componnents/ModalFiche";
+import FlashcardFilter from "../componnents/FlashcardFilter";
 
 export default function FicheDetails() {
   const navigate = useNavigate();
@@ -38,21 +39,41 @@ export default function FicheDetails() {
     () => (selectedFiche ? getSelectedFlashcards(selectedFiche?.id) : []),
     [selectedFiche],
   );
-  const difficileFlashcards = useLiveQuery(() => getErrorsFlashcards(Number(id)))
+  const difficileFlashcards = useLiveQuery(() =>
+    getErrorsFlashcards(Number(id)),
+  );
+  const [searchValue, setSearchValue] = useState("")
+  const [filterValue, setFilterValue] = useState("all")
+  const filteredFlashcards = flashcards?.slice().filter(
+    (card) => {
+      return card.frontCard.toLowerCase().includes(searchValue.toLowerCase()) ||
+      card.backCard.toLowerCase().includes(searchValue.toLowerCase())
+  }).filter(
+    (card) => {
+      if (filterValue === "all") return card
+      if (filterValue === "difficiles") return card.errors > 0
+      if (filterValue === "maitrisees") return card.desactive
+    }
+  )
   const dispatch = useDispatch();
-  const { isOpen: isOpenFicheModal, onOpen: onOpenFicheModal, onOpenChange: onOpenChangeFicheModal } = useDisclosure();
+  const {
+    isOpen: isOpenFicheModal,
+    onOpen: onOpenFicheModal,
+    onOpenChange: onOpenChangeFicheModal,
+  } = useDisclosure();
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const {
     isOpen: isOpenConfirmModal,
     onOpen: onOpenConfirmModal,
-    onOpenChange: onOpenChangeConfirmModal
+    onOpenChange: onOpenChangeConfirmModal,
   } = useDisclosure();
-  const { 
+  const {
     isOpen: isOpenTrainingStart,
     onOpen: onOpenTrainingStart,
-    onOpenChange: onOpenChangeTrainingStart} = useDisclosure()
+    onOpenChange: onOpenChangeTrainingStart,
+  } = useDisclosure();
 
-    const {
+  const {
     isOpen: isOpenConfirmFicheModal,
     onClose: onCloseConfirmFicheModal,
     onOpen: onOpenConfirmFicheModal,
@@ -64,31 +85,31 @@ export default function FicheDetails() {
     navigate("/fiches");
   };
 
-    const handleDelete = async (fiche) => {
-      try {
-        await deleteFiche(fiche.id);
-        dispatch(selectFiche(null))
-        dispatch(showAlert({ message: "Fiche supprimée.", type: "success" }));
-        onCloseConfirmFicheModal();
-        navigate("/fiches");
-      } catch (error) {
-        console.log(error);
-      }
-    };
+  const handleDelete = async (fiche) => {
+    try {
+      await deleteFiche(fiche.id);
+      dispatch(selectFiche(null));
+      dispatch(showAlert({ message: "Fiche supprimée.", type: "success" }));
+      onCloseConfirmFicheModal();
+      navigate("/fiches");
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   const handleStartTrainning = () => {
     const shuffled = [...selectedsFlashcards].sort(() => Math.random() - 0.5);
     dispatch(setFlashcards(shuffled));
-    dispatch(setTrainingMode("all"))
+    dispatch(setTrainingMode("all"));
     navigate(`/fiche/${id}/training`);
   };
 
   const handleHardStartTraining = () => {
     const shuffled = [...difficileFlashcards].sort(() => Math.random() - 0.5);
     dispatch(setFlashcards(shuffled));
-    dispatch(setTrainingMode("hard"))
+    dispatch(setTrainingMode("hard"));
     navigate(`/fiche/${id}/training`);
-  }
+  };
 
   const handleSelectAllFlashcards = () => {
     activeAllFlashcards(Number(id));
@@ -138,57 +159,74 @@ export default function FicheDetails() {
       )}
 
       {/* Information de la fiche sélectionnée */}
-<BoxContent>
-  <div className="flex justify-between items-start">
-    <div>
-      <h2 className="text-2xl font-bold">
-          {ficheDetailed?.name}
-      </h2>
-      {ficheDetailed?.description && (
-          <p className="text-sm text-foreground/60 mt-1">
-              {ficheDetailed?.description}
-          </p>
-      )}
-    </div>
-    <div className="flex flex-col gap-1">
-      <Button
-        size="sm"
-        isIconOnly
-        radius="full"
-        onPress={onOpenFicheModal}
-      >
-        <Pencil size={17} />
-      </Button>
-      <Button
-        size="sm"
-        isIconOnly
-        color="danger"
-        radius="full"
-        onPress={onOpenConfirmFicheModal}
-      >
-        <Trash size={17} />
-      </Button>
-    </div>
-  </div>
-    <div className="flex justify-around mt-3">
-        <div className="flex flex-col items-center">
-            <p className="text-xl font-bold text-warning">{flashcards?.filter(f => !f.desactive).length}</p>
+      <BoxContent>
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-2xl font-bold">{ficheDetailed?.name}</h2>
+            {ficheDetailed?.description && (
+              <p className="text-sm text-foreground/60 mt-1">
+                {ficheDetailed?.description}
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col gap-1">
+            <Button
+              size="sm"
+              isIconOnly
+              radius="full"
+              onPress={onOpenFicheModal}
+            >
+              <Pencil size={17} />
+            </Button>
+            <Button
+              size="sm"
+              isIconOnly
+              color="danger"
+              radius="full"
+              onPress={onOpenConfirmFicheModal}
+            >
+              <Trash size={17} />
+            </Button>
+          </div>
+        </div>
+        <div className="grid grid-cols-4 mt-3">
+          <div className="flex flex-col items-center">
+            <p className="text-xl font-bold text-warning">
+              {flashcards?.filter((f) => !f.desactive).length}
+            </p>
             <p className="text-xs text-foreground/60">À apprendre</p>
-        </div>
-        <div className="flex flex-col items-center">
-            <p className="text-xl font-bold text-danger">{difficileFlashcards?.length}</p>
+          </div>
+          <div className="flex flex-col items-center">
+            <p className="text-xl font-bold text-danger">
+              {difficileFlashcards?.length}
+            </p>
             <p className="text-xs text-foreground/60">À revoir</p>
-        </div>
-        <div className="flex flex-col items-center">
-            <p className="text-xl font-bold text-success">{flashcards?.filter(f => f.desactive).length}</p>
+          </div>
+          <div className="flex flex-col items-center">
+            <p className="text-xl font-bold text-success">
+              {flashcards?.filter((f) => f.desactive).length}
+            </p>
             <p className="text-xs text-foreground/60">Maîtrisées</p>
-        </div>
-        <div className="flex flex-col items-center">
-            <p className="text-xl font-bold text-primary">{flashcards?.length}</p>
+          </div>
+          <div className="flex flex-col items-center">
+            <p className="text-xl font-bold text-primary">
+              {flashcards?.length}
+            </p>
             <p className="text-xs text-foreground/60">Total</p>
+          </div>
         </div>
-    </div>
-</BoxContent>
+      </BoxContent>
+
+      {/* Filtre des flashcards */}
+      <BoxContent>
+        <FlashcardFilter
+          searchValue={searchValue}
+          onSearchValueChange={setSearchValue}
+          filter={filterValue}
+          onFilterChange={setFilterValue}
+          flashcards={flashcards}
+        />
+      </BoxContent>
 
       <div className="flex flex-col justify-center mx-3 mt-3">
         <Button
@@ -219,8 +257,8 @@ export default function FicheDetails() {
         )}
       </div>
 
-      {flashcards?.length > 0 ? (
-        flashcards?.map((flashcard) => (
+      {filteredFlashcards?.length > 0 ? (
+        filteredFlashcards?.map((flashcard) => (
           <FlashCard
             key={flashcard.id}
             flashcard={flashcard}
@@ -236,7 +274,11 @@ export default function FicheDetails() {
         </BoxContent>
       )}
 
-      <ModalFiche isOpen={isOpenFicheModal} onOpenChange={onOpenChangeFicheModal} fiche={selectedFiche}/>
+      <ModalFiche
+        isOpen={isOpenFicheModal}
+        onOpenChange={onOpenChangeFicheModal}
+        fiche={selectedFiche}
+      />
 
       <ModalConfirm
         isOpen={isOpenConfirmFicheModal}
@@ -245,7 +287,7 @@ export default function FicheDetails() {
         onConfirm={() => handleDelete(selectedFiche, onCloseConfirmFicheModal)}
       />
 
-      <ModalTrainingChoice 
+      <ModalTrainingChoice
         onAllCards={handleStartTrainning}
         onHardCards={handleHardStartTraining}
         onOpenChange={onOpenChangeTrainingStart}
@@ -263,7 +305,9 @@ export default function FicheDetails() {
       <ModalConfirm
         isOpen={isOpenConfirmModal}
         onOpenChange={onOpenChangeConfirmModal}
-        message={"Etes-vous sur de vouloir remettre toutes les cartes en révision ?"}
+        message={
+          "Etes-vous sur de vouloir remettre toutes les cartes en révision ?"
+        }
         onConfirm={handleSelectAllFlashcards}
       />
     </>
