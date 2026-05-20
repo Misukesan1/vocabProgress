@@ -58,30 +58,26 @@ export default function Training() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+  const calculateTime = () => {
+    if (currentIndex === flashcardsList.length - 1) {
+        const now = new Date()
+        const diffTurn = now - turnStart
+        const secTurn = Math.floor((diffTurn / 1000) % 60)
+        const minTurn = Math.floor(diffTurn / 1000 / 60)
+        setFormattedTimeTurn(`${minTurn}:${secTurn.toString().padStart(2, "0")}`)
+        const diffSession = now - sessionStart
+        const secSession = Math.floor((diffSession / 1000) % 60)
+        const minSession = Math.floor(diffSession / 1000 / 60)
+        setFormattedTimeSession(`${minSession}:${secSession.toString().padStart(2, "0")}`)
+    }
+}
+
   /**
    * Au clic sur la carte ou sur le bouton suivant
    */
   const onPress = () => {
     if (isFlipped) {
-      if (currentIndex === flashcardsList.length - 1) {
-        const now = new Date();
-
-        // temps du tour
-        const diffTurn = now - turnStart;
-        const secTurn = Math.floor((diffTurn / 1000) % 60);
-        const minTurn = Math.floor(diffTurn / 1000 / 60);
-        setFormattedTimeTurn(
-          `${minTurn}:${secTurn.toString().padStart(2, "0")}`,
-        );
-
-        // temps total de la session
-        const diffSession = now - sessionStart;
-        const secSession = Math.floor((diffSession / 1000) % 60);
-        const minSession = Math.floor(diffSession / 1000 / 60);
-        setFormattedTimeSession(
-          `${minSession}:${secSession.toString().padStart(2, "0")}`,
-        );
-      }
+      calculateTime()
       dispatch(flipCard(false));
       dispatch(incrementCurrentIndex());
     } else {
@@ -100,6 +96,7 @@ export default function Training() {
         flashcardsList[currentIndex].id,
         flashcardsList[currentIndex].desactive,
       );
+      calculateTime()
       dispatch(flipCard(false));
       dispatch(incrementCurrentIndex());
       dispatch(deselectWord());
@@ -118,6 +115,7 @@ export default function Training() {
   const pressBtnARevoir = () => {
     try {
       incrementError(flashcardsList[currentIndex].id)
+      calculateTime()
       dispatch(
         showAlert({
           message: `Vous marquez cette carte comme "difficile".`,
@@ -290,6 +288,7 @@ export default function Training() {
               className="w-fit"
               onPress={() => {
                 if (endTraining) navigate(`/fiche/${id}`);
+                calculateTime()
                 dispatch(clearTraining());
                 setEndTraining(true);
               }}

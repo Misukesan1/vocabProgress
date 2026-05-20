@@ -160,6 +160,6 @@ export const resetErrors = async (id) => {
 export const activeAllFlashcards = async (idFiche) => {
     const flashcards = await db.flashcard.where({ficheId: idFiche}).toArray()
     for (const flashcard of flashcards) {
-        await db.flashcard.update(flashcard.id, {desactive: false})
+        await db.flashcard.update(flashcard.id, {desactive: false, errors: 0})
     }
 }

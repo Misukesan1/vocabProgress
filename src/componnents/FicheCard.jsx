@@ -21,10 +21,10 @@ export default function FicheCard({ name, description, fiche }) {
       <Card
         shadow="sm"
         radius="sm"
-        className="mb-1 my-1 border border-divider/50"
+        className="border border-divider/50"
       >
         <CardBody 
-          className="px-4 py-3"
+          className="px-4 py-3 cursor-pointer transition-opacity active:opacity-70"
           onClick={handleDetails}
         >
           <div className="flex flex-row items-center justify-between">
@@ -36,7 +36,7 @@ export default function FicheCard({ name, description, fiche }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-3">
+          <div className="flex gap-5">
             <p className="text-sm font-light text-foreground">
               Cartes :{" "}
               <span className="font-semibold">{flashcards?.length}</span>

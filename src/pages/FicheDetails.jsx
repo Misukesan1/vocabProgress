@@ -5,7 +5,7 @@ import BoxContent from "../componnents/BoxContent";
 import FlashCard from "../componnents/FlashCard";
 import { selectFiche } from "../features/ficheSlice";
 import { Button, useDisclosure } from "@heroui/react";
-import { ArrowLeft, Pencil, Trash } from "lucide-react";
+import { ArrowLeft, Pencil, Play, Plus, Trash, TriangleAlert } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import {
@@ -21,11 +21,12 @@ import ModalConfirm from "../componnents/ModalConfirm";
 import ModalTrainingChoice from "../componnents/ModalTrainingChoice";
 import ModalFiche from "../componnents/ModalFiche";
 import FlashcardFilter from "../componnents/FlashcardFilter";
+import DropdownMenuFiche from "../componnents/DropdownMenuFiche";
 
 export default function FicheDetails() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [flashCardSelected, setFlashCardSelected] = useState(null);
+  const [flashCardSelected, setFlashCardSelected] = useState(null); // indication pour la creation/modification de la carte
   const selectedProfile = useSelector((state) => state.profile.selectedProfile);
   const selectedFiche = useSelector((state) => state.fiche.selectedFiche);
   const trainingInProgress = useSelector((state) => state.training.flashcards);
@@ -131,6 +132,7 @@ export default function FicheDetails() {
 
   return (
     <>
+      {/* Retour vers la liste des fiches de la collection sélectionnée */}
       <Button
         size="sm"
         color="danger"
@@ -143,7 +145,7 @@ export default function FicheDetails() {
         Retour
       </Button>
 
-      {selectedsFlashcards?.length > 0 && (
+      {/* {selectedsFlashcards?.length > 0 && (
         <div className="mx-3">
           <Button
             size="sm"
@@ -156,11 +158,11 @@ export default function FicheDetails() {
             Démarrer la révision
           </Button>
         </div>
-      )}
+      )} */}
 
       {/* Information de la fiche sélectionnée */}
       <BoxContent>
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-bold">{ficheDetailed?.name}</h2>
             {ficheDetailed?.description && (
@@ -169,8 +171,23 @@ export default function FicheDetails() {
               </p>
             )}
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex gap-1">
+            <DropdownMenuFiche 
+              fiche={selectedFiche} 
+              flashcards={flashcards}
+            />
             <Button
+              color="primary"
+              radius="md"
+              isIconOnly
+              onPress={() => {
+                setFlashCardSelected(null);
+                onOpen();
+              }}
+            >
+              <Plus size={18} />
+            </Button>
+            {/* <Button
               size="sm"
               isIconOnly
               radius="full"
@@ -186,7 +203,7 @@ export default function FicheDetails() {
               onPress={onOpenConfirmFicheModal}
             >
               <Trash size={17} />
-            </Button>
+            </Button> */}
           </div>
         </div>
         <div className="grid grid-cols-4 mt-3">
@@ -215,20 +232,62 @@ export default function FicheDetails() {
             <p className="text-xs text-foreground/60">Total</p>
           </div>
         </div>
+        <Button 
+          color="primary" 
+          size="sm" 
+          className="mx-auto mt-5"
+          startContent={<Play size={15} />}
+          onPress={handleStartTrainning}
+        >Lancer la révision</Button>
+
+        {difficileFlashcards?.length > 0 &&
+          <Button 
+            color="danger" 
+            size="sm" 
+            className="mx-auto mt-1"
+            startContent={<TriangleAlert size={15} />}
+            onPress={handleHardStartTraining}
+          >Cartes "à revoir"</Button>
+        }
+        
       </BoxContent>
+
+      {/* Pas de cartes dans la fiche */}
+      {flashcards?.length === 0 && (
+        <BoxContent>
+          <div className="flex flex-col justify-center items-center">
+            <p className="font-light">Aucune cartes dans cette fiche</p>
+            <Button
+              className="mt-2 mx-auto"
+              size="sm"
+              radius="full"
+              color="primary"
+              startContent={<Plus size={18} />}
+              onPress={() => {
+                setFlashCardSelected(null);
+                onOpen();
+              }}
+            >
+              Ajouter ma première carte
+            </Button>
+          </div>
+        </BoxContent>
+      )}
 
       {/* Filtre des flashcards */}
-      <BoxContent>
-        <FlashcardFilter
-          searchValue={searchValue}
-          onSearchValueChange={setSearchValue}
-          filter={filterValue}
-          onFilterChange={setFilterValue}
-          flashcards={flashcards}
-        />
-      </BoxContent>
+      {flashcards?.length > 0 && (
+        <BoxContent>
+          <FlashcardFilter
+            searchValue={searchValue}
+            onSearchValueChange={setSearchValue}
+            filter={filterValue}
+            onFilterChange={setFilterValue}
+            flashcards={flashcards}
+          />
+        </BoxContent>
+      )}
 
-      <div className="flex flex-col justify-center mx-3 mt-3">
+      {/* <div className="flex flex-col justify-center mx-3 mt-3">
         <Button
           size="sm"
           color="secondary"
@@ -255,9 +314,10 @@ export default function FicheDetails() {
             Remettre toutes les cartes en révision
           </Button>
         )}
-      </div>
+      </div> */}
 
-      {filteredFlashcards?.length > 0 ? (
+      {/* Affichage des cartes de la fiche */}
+      {filteredFlashcards?.length > 0 &&
         filteredFlashcards?.map((flashcard) => (
           <FlashCard
             key={flashcard.id}
@@ -267,12 +327,7 @@ export default function FicheDetails() {
               onOpen();
             }}
           />
-        ))
-      ) : (
-        <BoxContent>
-          <p className="text-center">Aucunes cartes</p>
-        </BoxContent>
-      )}
+        ))}
 
       <ModalFiche
         isOpen={isOpenFicheModal}
@@ -283,7 +338,11 @@ export default function FicheDetails() {
       <ModalConfirm
         isOpen={isOpenConfirmFicheModal}
         onOpenChange={onOpenChangeConfirmFicheModal}
-        message={`Etes-vous sur de vouloir supprimer cette fiche "${selectedFiche?.name}" ? Cette action supprimera également les ${flashcards?.length} cartes associées et est irréversible.`}
+        message={
+         `Etes-vous sur de vouloir supprimer cette fiche "${selectedFiche?.name}" ? 
+          ${(flashcards?.length === 0) 
+            ? `Cette fiche ne contient pas de cartes et cette action est irréversible.` 
+            : `Cette action supprimera également les ${flashcards?.length} cartes associées et est irréversible.`}`}
         onConfirm={() => handleDelete(selectedFiche, onCloseConfirmFicheModal)}
       />
 

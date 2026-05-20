@@ -6,6 +6,8 @@ import { useDispatch } from "react-redux";
 import { showAlert } from "../features/alertSlice";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { selectFiche } from "../features/ficheSlice";
+import { selectProfile } from "../features/profileSlice";
 
 export default function Settings() {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
@@ -18,6 +20,8 @@ export default function Settings() {
     await db.profile.clear();
     await db.fiche.clear();
     await db.flashcard.clear();
+    dispatch(selectFiche(null))
+    dispatch(selectProfile(null))
   };
 
   useEffect(() => {
@@ -28,7 +32,6 @@ export default function Settings() {
 
   return (
     <>
-      <h1 className="text-center">Page settings.</h1>
 
       {/* Formater données */}
       <BoxContent>

@@ -20,6 +20,7 @@ export default function FicheFilter({ficheList, filter, onFilterChange, searchVa
           variant={filter === "recent" ? "shadow" : "bordered"}
           onClick={() => onFilterChange("recent")}
           color="secondary"
+          className="cursor-pointer"
         >
           Récent
         </Chip>
@@ -28,6 +29,7 @@ export default function FicheFilter({ficheList, filter, onFilterChange, searchVa
           variant={filter === "ancien" ? "shadow" : "bordered"}
           onClick={() => onFilterChange("ancien")}
           color="secondary"
+          className="cursor-pointer"
         >
           Ancien
         </Chip>
@@ -36,6 +38,7 @@ export default function FicheFilter({ficheList, filter, onFilterChange, searchVa
           variant={filter === "a-z" ? "shadow" : "bordered"}
           onClick={() => onFilterChange("a-z")}
           color="secondary"
+          className="cursor-pointer"
         >
           A-z
         </Chip>
@@ -44,6 +47,7 @@ export default function FicheFilter({ficheList, filter, onFilterChange, searchVa
           variant={filter === "z-a" ? "shadow" : "bordered"}
           onClick={() => onFilterChange("z-a")}
           color="secondary"
+          className="cursor-pointer"
         >
           Z-a
         </Chip>
@@ -54,6 +58,7 @@ export default function FicheFilter({ficheList, filter, onFilterChange, searchVa
             variant={filter === "difficiles" ? "shadow" : "bordered"}
             onClick={() => onFilterChange("difficiles")}
             color="secondary"
+            className="cursor-pointer"
             endContent={<TriangleAlert size={18} />}
             >
             A revoir

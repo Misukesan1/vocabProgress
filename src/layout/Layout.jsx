@@ -21,7 +21,7 @@ export default function Layout() {
   }, [alert.isVisible]);
 
   return (
-    <div>
+    <div className="min-h-screen flex flex-col justify-center pt-16 pb-16">
 
       <Header />
 

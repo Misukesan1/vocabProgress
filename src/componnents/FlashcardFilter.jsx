@@ -19,6 +19,7 @@ export default function FlashcardFilter({searchValue, onSearchValueChange, filte
                 variant={filter === "all" ? "shadow" : "bordered"}
                 onClick={() => onFilterChange("all")}
                 color="secondary"
+                className="cursor-pointer"
                 >
                 Toutes
             </Chip>
@@ -29,6 +30,7 @@ export default function FlashcardFilter({searchValue, onSearchValueChange, filte
                     variant={filter === "maitrisees" ? "shadow" : "bordered"}
                     onClick={() => onFilterChange("maitrisees")}
                     color="secondary"
+                    className="cursor-pointer"
                     endContent={<Check size={18} />}
                     >
                     Maîtrisées
@@ -41,6 +43,7 @@ export default function FlashcardFilter({searchValue, onSearchValueChange, filte
                     variant={filter === "difficiles" ? "shadow" : "bordered"}
                     onClick={() => onFilterChange("difficiles")}
                     color="secondary"
+                    className="cursor-pointer"
                     endContent={<AlertTriangle size={18} />}
                     >
                     A revoir

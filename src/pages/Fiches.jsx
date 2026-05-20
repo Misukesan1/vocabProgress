@@ -6,7 +6,7 @@ import { Button, useDisclosure } from "@heroui/react";
 import BoxContent from "../componnents/BoxContent";
 import ModalFiche from "../componnents/ModalFiche";
 import { useNavigate } from "react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import FicheFilter from "../componnents/FicheFilter";
 
@@ -41,7 +41,101 @@ export default function Fiches() {
 
   return (
     <>
-      {selectProfile ? (
+      {/* Pas de collections sélectionnées */}
+      {!selectProfile && (
+        <div className="flex flex-col">
+          <BoxContent>
+            <p className="text-center">
+              Sélectionnez une collection depuis l'accueil
+            </p>
+            <Button
+              onPress={() => navigate("/")}
+              size="sm"
+              color="danger"
+              radius="full"
+              className="mt-3 mx-auto"
+              startContent={<ArrowLeft size={15} />}
+            >
+              Accueil
+            </Button>
+          </BoxContent>
+        </div>
+      )}
+
+      {/* Pas de fiches dans la collection */}
+      {(selectProfile && fiches?.length === 0) && (
+        <div className="flex flex-col">
+          <BoxContent>
+              <div className="text-center">
+                <p className="font-bold">{selectProfile?.name}</p>
+                <p className="font-light">
+                  Cette collection ne contient pas encore de fiches.
+                </p>
+              </div>
+            <Button
+              onPress={onOpenFicheModal}
+              size="sm"
+              color="primary"
+              radius="full"
+              className="mt-3 mx-auto"
+              startContent={<Plus size={18} />}
+            >
+              Créer ma première fiche
+            </Button>
+          </BoxContent>
+        </div>
+      )}
+
+      {/* Affichage des fiches de la collection sélectionnée */}
+      {selectProfile && fiches?.length > 0 && (
+        <div>
+          {/* Infos de la collection */}
+          <BoxContent>
+            <div className="flex justify-between items-center">
+              <div>
+              <p className="text-xl font-bold">{selectProfile?.name}</p>
+              <p className="font-light"><span className="font-bold">{fiches?.length}</span> {fiches?.length === 1 ? "fiche" : "fiches"}</p>
+              </div>
+              <Button
+                color="primary"
+                radius="md"
+                isIconOnly
+                onPress={onOpenFicheModal}
+              >
+                <Plus size={18} />
+              </Button>
+            </div>
+          </BoxContent>
+
+          {/* Filtre de recherche */}
+          <BoxContent>
+            <FicheFilter
+              ficheList={fiches}
+              filter={filter}
+              onFilterChange={setFilter}
+              searchValue={searchValue}
+              onSearchValueChange={setSearchValue}
+            />
+          </BoxContent>
+
+          <div className="mt-3 mx-3 flex flex-col gap-2">
+            {/* Affichage des fiches du profil sélectionné */}
+            {selectProfile &&
+              filteredFiche &&
+              filteredFiche.length > 0 &&
+              filteredFiche?.map((fiche) => (
+                <FicheCard
+                  key={fiche.id}
+                  name={fiche.name}
+                  description={fiche.description || "Pas de description."}
+                  fiche={fiche}
+                />
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* {selectProfile ? (
         <BoxContent>
           <p className="text-center">{fiches?.length} fiches.</p>
           <Button
@@ -70,38 +164,12 @@ export default function Fiches() {
             Retour
           </Button>
         </BoxContent>
-      )}
+      )} */}
 
-      {/* Filtre de recherche */}
-      {fiches?.length > 0 &&
-        <BoxContent>
-          <FicheFilter 
-            ficheList={fiches}
-            filter={filter} 
-            onFilterChange={setFilter}
-            searchValue={searchValue}
-            onSearchValueChange={setSearchValue}
-          />
-        </BoxContent>
-      }
-
-      <div className="mt-3 mx-3">
-        {/* Affichage des fiches du profil sélectionné */}
-        {selectProfile &&
-          filteredFiche &&
-          filteredFiche.length > 0 &&
-          filteredFiche?.map((fiche) => (
-            <FicheCard
-              key={fiche.id}
-              name={fiche.name}
-              description={fiche.description || "Pas de description."}
-              fiche={fiche}
-            />
-          ))}
-      </div>
-
-      <ModalFiche isOpen={isOpenFicheModal} onOpenChange={onOpenChangeFicheModal}/>
-
+      <ModalFiche
+        isOpen={isOpenFicheModal}
+        onOpenChange={onOpenChangeFicheModal}
+      />
     </>
   );
 }

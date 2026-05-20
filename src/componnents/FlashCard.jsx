@@ -72,7 +72,7 @@ export default function FlashCard({ flashcard, onEdit }) {
               className={isDisabled ? "text-foreground/30" : "text-foreground"}
             />
           </Button>
-          <Button
+          {/* <Button
             isIconOnly
             size="sm"
             radius="full"
@@ -81,7 +81,7 @@ export default function FlashCard({ flashcard, onEdit }) {
             onPress={onOpen}
           >
             <Trash size={15} />
-          </Button>
+          </Button> */}
           <Button
             isIconOnly
             size="sm"
@@ -105,6 +105,7 @@ export default function FlashCard({ flashcard, onEdit }) {
         message="Etes-vous sur de vouloir supprimer cette flashcard ?"
         onConfirm={handleConfirmDelete}
       />
+      
     </Card>
   );
 }
