@@ -166,7 +166,7 @@ export const activeAllFlashcards = async (idFiche) => {
 
 /**
  * Recherche les flashcards de toutes les fiches d'un profil dont le recto ou le verso
- * commence par le texte recherché (insensible à la casse)
+ * contient le texte recherché (insensible à la casse)
  * @param {number} profileId
  * @param {string} searchText
  * @returns {Promise<(Flashcard & {ficheName: string})[]>}
@@ -182,8 +182,8 @@ export const searchFlashcardsInProfile = async (profileId, searchText) => {
     const flashcards = await db.flashcard.where('ficheId').anyOf(fiches.map((fiche) => fiche.id)).toArray()
     return flashcards
         .filter((flashcard) =>
-            flashcard.frontCard.toLowerCase().startsWith(text) ||
-            flashcard.backCard.toLowerCase().startsWith(text)
+            flashcard.frontCard.toLowerCase().includes(text) ||
+            flashcard.backCard.toLowerCase().includes(text)
         )
         .map((flashcard) => ({ ...flashcard, ficheName: ficheNamesById[flashcard.ficheId] }))
 }
