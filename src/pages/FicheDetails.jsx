@@ -145,21 +145,6 @@ export default function FicheDetails() {
         Retour
       </Button>
 
-      {/* {selectedsFlashcards?.length > 0 && (
-        <div className="mx-3">
-          <Button
-            size="sm"
-            color="primary"
-            radius="full"
-            className="my-2"
-            fullWidth
-            onPress={onOpenTrainingStart}
-          >
-            Démarrer la révision
-          </Button>
-        </div>
-      )} */}
-
       {/* Information de la fiche sélectionnée */}
       <BoxContent>
         <div className="flex justify-between items-center">

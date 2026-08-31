@@ -154,7 +154,7 @@ export const resetErrors = async (id) => {
 }
 /**
  * Activer toutes les flashcards d'une fiche
- * @param {number} idFiche 
+ * @param {number} idFiche
  * @return {void}
  */
 export const activeAllFlashcards = async (idFiche) => {
@@ -162,4 +162,28 @@ export const activeAllFlashcards = async (idFiche) => {
     for (const flashcard of flashcards) {
         await db.flashcard.update(flashcard.id, {desactive: false, errors: 0})
     }
+}
+
+/**
+ * Recherche les flashcards de toutes les fiches d'un profil dont le recto ou le verso
+ * commence par le texte recherché (insensible à la casse)
+ * @param {number} profileId
+ * @param {string} searchText
+ * @returns {Promise<(Flashcard & {ficheName: string})[]>}
+ */
+export const searchFlashcardsInProfile = async (profileId, searchText) => {
+    const text = searchText.trim().toLowerCase()
+    if (!text) return []
+
+    const fiches = await db.fiche.where({ profileId }).toArray()
+    if (fiches.length === 0) return []
+    const ficheNamesById = Object.fromEntries(fiches.map((fiche) => [fiche.id, fiche.name]))
+
+    const flashcards = await db.flashcard.where('ficheId').anyOf(fiches.map((fiche) => fiche.id)).toArray()
+    return flashcards
+        .filter((flashcard) =>
+            flashcard.frontCard.toLowerCase().startsWith(text) ||
+            flashcard.backCard.toLowerCase().startsWith(text)
+        )
+        .map((flashcard) => ({ ...flashcard, ficheName: ficheNamesById[flashcard.ficheId] }))
 }

@@ -54,11 +54,27 @@ Defined in [src/router/router.jsx](src/router/router.jsx). Hash-based because th
 3. "Je maîtrise" sets `desactive = true` (removes from future training rounds); "À revoir" increments `errors`.
 4. After all cards, user can start another round with remaining non-mastered cards.
 
+### List UI Pattern (Collections / Fiches / Flashcards)
+
+Each level of the hierarchy follows the same list-page pattern, seen in [Home.jsx](src/pages/Home.jsx), [Fiches.jsx](src/pages/Fiches.jsx), and [FicheDetails.jsx](src/pages/FicheDetails.jsx):
+
+- A `*Card` component (`CollectionCard`, `FicheCard`) renders one row and navigates on click.
+- A `*Filter` component (`FicheFilter`, `FlashcardFilter`) provides a search `Input` plus `Chip`-based sort/filter toggles (recent/ancien/a-z/z-a, or "à revoir"/"maîtrisées" where relevant); filtering/sorting itself is done client-side in the page component, not the filter component.
+- A `DropdownMenu*` component (`DropdownMenuFiche`) holds per-item actions (modifier / supprimer / remettre en révision) behind an `Ellipsis` icon button, using `ModalConfirm` for destructive actions.
+- **`DropdownMenuCollection.jsx` is a new, empty stub** (not yet implemented or wired into `CollectionCard`) — in-progress work mirroring `DropdownMenuFiche` for collection-level actions.
+
 ### Key Conventions
 
 - **JavaScript only** — no TypeScript.
 - **Component folder is misspelled** `src/componnents/` (two n's) — keep the existing name to avoid breaking imports.
 - Live database queries use `useLiveQuery` from `dexie-react-hooks`; prefer this over manual state for anything read from IndexedDB.
 - UI components come from **HeroUI** (`@heroui/react`); use them before reaching for custom solutions.
+- Icons come from **lucide-react**.
 - Dark/light theme is managed by **next-themes**; read the current theme via `useTheme()`.
 - Deploy target is GitHub Pages; the CI workflow (`.github/workflows/deploy.yml`) triggers on push to `main`.
+
+### Current Status
+
+- Home, Fiches, and FicheDetails all now share the card/filter/dropdown list pattern above.
+- `/progres` (Progress.jsx) is still an unimplemented stub page.
+- Uncommitted on `dev`: `Fiches.jsx` reworked to move collection info above the fiche filter and always show it once a profile is selected; `FicheDetails.jsx` had a dead commented-out "Démarrer la révision" button removed; `DropdownMenuCollection.jsx` added as an empty placeholder.
