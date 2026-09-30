@@ -14,14 +14,23 @@ export const trainingSlice = createSlice({
     deselectWords: 0,
     totalDeselectWords: 0,
     currentIndex: 0,
-    trainingMode: null
+    ficheId: null,
   },
   reducers: {
+    // Démarre une nouvelle session (remplace toute session en cours)
+    startTraining: (state, action) => {
+      const { ficheId, flashcards } = action.payload;
+      state.flashcards = flashcards;
+      state.ficheId = ficheId;
+      state.isReversed = false;
+      state.isFliped = false;
+      state.tours = 0;
+      state.deselectWords = 0;
+      state.totalDeselectWords = 0;
+      state.currentIndex = 0;
+    },
     setFlashcards: (state, action) => {
       state.flashcards = action.payload;
-    },
-    setTrainingMode: (state, action) => {
-      state.trainingMode = action.payload
     },
     incrementCurrentIndex: (state) => {
       state.currentIndex += 1;
@@ -40,7 +49,7 @@ export const trainingSlice = createSlice({
       state.deselectWords = 0;
       state.totalDeselectWords = 0;
       state.currentIndex = 0;
-      state.trainingMode = null
+      state.ficheId = null;
     },
     nextRoundTraining: (state, action) => {
       state.flashcards = action.payload;
@@ -49,6 +58,19 @@ export const trainingSlice = createSlice({
       state.tours += 1;
       state.currentIndex = 0;
       state.deselectWords = 0;
+    },
+    // Carte modifiée pendant la session : on remplace sa copie
+    updateTrainingCard: (state, action) => {
+      const index = state.flashcards.findIndex((card) => card.id === action.payload.id);
+      if (index !== -1) state.flashcards[index] = action.payload;
+    },
+    // Carte supprimée pendant la session : la suivante prend sa place
+    removeTrainingCard: (state, action) => {
+      const index = state.flashcards.findIndex((card) => card.id === action.payload);
+      if (index === -1) return;
+      state.flashcards.splice(index, 1);
+      if (index < state.currentIndex) state.currentIndex -= 1;
+      state.isFliped = false;
     },
     deselectWord: (state) => {
       state.deselectWords += 1;
@@ -66,7 +88,9 @@ export const {
   nextRoundTraining,
   deselectWord,
   reverseCard,
-  setTrainingMode
+  startTraining,
+  updateTrainingCard,
+  removeTrainingCard,
 } = trainingSlice.actions;
 
 export default trainingSlice.reducer;

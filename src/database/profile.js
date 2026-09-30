@@ -23,13 +23,13 @@ function validationNameProfile(name) {
 
 /**
  * Vérifie si le profile existe
- * @param {string} name 
+ * @param {string} name
+ * @param {number} [exceptId] id du profil à ignorer (celui qu'on modifie)
  * @returns {Promise<boolean>} vrai si le nom de profil existe déjà
  */
-async function checkProfileIfExist(name) {
+async function checkProfileIfExist(name, exceptId) {
   const selectProfile = await db.profile.where({ name: name }).first();
-  if (selectProfile) return true;
-  return false;
+  return !!selectProfile && selectProfile.id !== exceptId;
 }
 
 // * CRUD
@@ -44,7 +44,7 @@ async function checkProfileIfExist(name) {
 export const addProfile = async (name) => {
   const normalizedName = name.trim().charAt(0).toUpperCase() + name.trim().slice(1)
   if (await checkProfileIfExist(normalizedName))
-    throw new Error("Ce nom de profil existe déjà.");
+    throw new Error("Ce nom de collection existe déjà.");
 
   validationNameProfile(normalizedName);
   return db.profile.add({ name: normalizedName });
@@ -59,9 +59,9 @@ export const addProfile = async (name) => {
  */
 export const editProfile = async (id, name) => {
   const normalizedName = name.trim().charAt(0).toUpperCase() + name.trim().slice(1)
-  if (!(await getProfile(id))) throw new Error("Profil introuvable.");
-  if (await checkProfileIfExist(normalizedName))
-    throw new Error("Ce nom de profil existe déjà.");
+  if (!(await getProfile(id))) throw new Error("Collection introuvable.");
+  if (await checkProfileIfExist(normalizedName, id))
+    throw new Error("Ce nom de collection existe déjà.");
 
   validationNameProfile(normalizedName);
   return db.profile.update(id, { name: normalizedName });
@@ -72,12 +72,15 @@ export const editProfile = async (id, name) => {
  * @param {number} id 
  * @returns {Promise<void>}
  */
-export const deleteProfile = async (id) => {
-  const ficheToDelete = await getFichesFromProfile(id)
-  for (const fiche of ficheToDelete) {
-    await deleteFiche(fiche.id)
-  }
-  return db.profile.delete(id);
+export const deleteProfile = (id) => {
+  // Transaction : tout est supprimé, ou rien si une étape échoue
+  return db.transaction("rw", db.profile, db.fiche, db.flashcard, async () => {
+    const ficheToDelete = await getFichesFromProfile(id)
+    for (const fiche of ficheToDelete) {
+      await deleteFiche(fiche.id)
+    }
+    await db.profile.delete(id);
+  });
 };
 
 /**

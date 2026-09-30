@@ -1,21 +1,21 @@
 import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
+  DrawerContent,
+  DrawerHeader,
+  DrawerBody,
+  DrawerFooter,
   Button,
   Input,
   Textarea,
   Form,
 } from "@heroui/react";
+import BottomSheet from "./common/BottomSheet";
 import { addFiche, editFiche } from "../database/fiche";
 import { useDispatch, useSelector } from "react-redux";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { showAlert } from "../features/alertSlice";
 
 export default function ModalFiche({ isOpen, onOpenChange, fiche = null }) {
-    
+
   const isNewFiche = fiche === null;
   const selectedProfile = useSelector((state) => state.profile.selectedProfile);
   const [name, setName] = useState(isNewFiche ? "" : fiche?.name || "")
@@ -34,7 +34,7 @@ export default function ModalFiche({ isOpen, onOpenChange, fiche = null }) {
       if (isNewFiche) {
         await addFiche(name, description, selectedProfile.id);
         dispatch(
-          showAlert({ message: "Nouvelle fiche crée.", type: "success" }),
+          showAlert({ message: "Nouvelle fiche créée.", type: "success" }),
         );
         onClose();
       } else {
@@ -48,29 +48,20 @@ export default function ModalFiche({ isOpen, onOpenChange, fiche = null }) {
     }
   }
 
-  useEffect(() => {
-    setErrorNameMessage("");
-    setErrorDescriptionMessage("");
-    setName(isNewFiche ? "" : fiche?.name || "")
-    setDescription(isNewFiche ? "" : fiche?.description || "")
-  }, [isOpen]);
-
   return (
-    <Modal
+    <BottomSheet
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       isDismissable={false}
       isKeyboardDismissDisabled={true}
-      placement="center"
-      backdrop="blur"
     >
-      <ModalContent>
+      <DrawerContent>
         {(onClose) => (
           <Form onSubmit={(e) => handleSubmit(e, onClose)} className="contents">
-            <ModalHeader>
-              {isNewFiche ? "Créer une nouvelle fiche." : "Modifier la fiche."}
-            </ModalHeader>
-            <ModalBody className="gap-3">
+            <DrawerHeader>
+              {isNewFiche ? "Nouvelle fiche" : "Modifier la fiche"}
+            </DrawerHeader>
+            <DrawerBody className="gap-3">
               <Input
                 label="Nom de la fiche"
                 defaultValue={isNewFiche ? "" : fiche?.name}
@@ -91,18 +82,18 @@ export default function ModalFiche({ isOpen, onOpenChange, fiche = null }) {
                 maxLength={500}
                 onChange={() => setErrorDescriptionMessage("")}
               />
-            </ModalBody>
-            <ModalFooter>
-              <Button variant="light" color="danger" onPress={onClose}>
-                Retour
+            </DrawerBody>
+            <DrawerFooter>
+              <Button variant="light" onPress={onClose}>
+                Annuler
               </Button>
               <Button color="primary" type="submit">
                 {isNewFiche ? "Créer" : "Modifier"}
               </Button>
-            </ModalFooter>
+            </DrawerFooter>
           </Form>
         )}
-      </ModalContent>
-    </Modal>
+      </DrawerContent>
+    </BottomSheet>
   );
 }

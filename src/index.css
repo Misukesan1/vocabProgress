@@ -2,3 +2,119 @@
 @plugin './hero.ts';
 @source '../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}';
 @custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Papier chaud */
+  --neu-surface: #ece4d6;
+  --neu-shadow-light: #fbf7ef;
+  --neu-shadow-dark: #c7bba4;
+  --neu-accent: #c1652f;
+  /* Ombre "chaude", teintée à l'accent — réservée aux surfaces qui font autorité
+     (cartes de contenu, états sélectionnés) pour une sensation moins usinée */
+  --neu-shadow-dark-warm: color-mix(in srgb, var(--neu-shadow-dark) 85%, var(--neu-accent) 15%);
+}
+
+.dark {
+  /* Encre profonde */
+  --neu-surface: #201b17;
+  --neu-shadow-light: #2c251f;
+  --neu-shadow-dark: #100d0b;
+  --neu-accent: #e2915a;
+  --neu-shadow-dark-warm: color-mix(in srgb, var(--neu-shadow-dark) 80%, var(--neu-accent) 20%);
+}
+
+body {
+  background-color: var(--neu-surface);
+  transition: background-color 200ms ease;
+}
+
+@layer components {
+  /* Surface de contenu principale (carte de fiche, carte de flashcard...) :
+     relief large et diffus, légèrement asymétrique et teinté pour éviter
+     l'effet "un seul preset agrandi". C'est le niveau de hiérarchie le plus élevé. */
+  .neu-raised {
+    background: var(--neu-surface);
+    box-shadow:
+      8px 10px 22px -3px var(--neu-shadow-dark-warm),
+      -5px -5px 16px var(--neu-shadow-light);
+  }
+
+  /* Surface secondaire (ligne de liste, bloc imbriqué dans une carte) :
+     relief net et resserré, sans teinte — reste en retrait derrière .neu-raised. */
+  .neu-raised-sm {
+    background: var(--neu-surface);
+    box-shadow:
+      3px 4px 8px var(--neu-shadow-dark),
+      -2px -2px 6px var(--neu-shadow-light);
+  }
+
+  /* Bloc "enfoncé" dans la surface (état actif/sélectionné) : empreinte plus
+     nette et plus rapprochée qu'un simple .neu-raised inversé, pour bien lire
+     "creusé" plutôt que "moins relief". */
+  .neu-pressed {
+    background: var(--neu-surface);
+    box-shadow:
+      inset 4px 4px 8px var(--neu-shadow-dark-warm),
+      inset -3px -3px 6px var(--neu-shadow-light);
+  }
+
+  /* Bouton interactif : relief court et "clic net" au repos, s'enfonce au clic.
+     Volontairement plus compact que .neu-raised-sm pour se lire comme actionnable. */
+  .neu-btn {
+    background: var(--neu-surface);
+    box-shadow:
+      3px 3px 6px var(--neu-shadow-dark),
+      -3px -3px 6px var(--neu-shadow-light);
+    transition: box-shadow 150ms ease, transform 150ms ease;
+  }
+
+  .neu-btn:active {
+    box-shadow:
+      inset 2px 2px 5px var(--neu-shadow-dark-warm),
+      inset -2px -2px 4px var(--neu-shadow-light);
+    transform: scale(0.96);
+  }
+
+  /* État clavier des éléments interactifs de la navigation (header + barre
+     du bas) : un anneau simple teinté à l'accent, plutôt qu'un outline par
+     défaut du navigateur qui jure avec le rendu neumorphique. Regroupé ici
+     car partagé par 4+ éléments (toggle de thème, liens de la barre basse). */
+  .neu-focusable {
+    outline: none;
+  }
+
+  .neu-focusable:focus-visible {
+    outline: 2px solid var(--neu-accent);
+    outline-offset: 2px;
+  }
+
+  /* Barres de layout, détachées de la surface par une seule ombre directionnelle
+     (pas de double relief : ce sont des panneaux ancrés au viewport, pas des blocs posés).
+     Le bandeau bas porte la navigation principale : ombre plus présente que le header. */
+  .neu-bar-bottom {
+    background: var(--neu-surface);
+    box-shadow:
+      0 -10px 20px -12px var(--neu-shadow-dark-warm),
+      inset 0 1px 0 0 var(--neu-shadow-light);
+  }
+
+  .neu-bar-top {
+    background: var(--neu-surface);
+    box-shadow:
+      0 6px 14px -10px var(--neu-shadow-dark),
+      inset 0 -1px 0 0 var(--neu-shadow-light);
+  }
+
+  /* Forme signature des cartes de contenu (fiche / flashcard) : un coin
+     resserré évoque le coin corné d'une fiche cartonnée, plutôt qu'un
+     rectangle à rayon uniforme. */
+  .neu-shape-card {
+    border-radius: 1.75rem 1.75rem 0.625rem 1.75rem;
+  }
+
+  /* Forme des éléments secondaires (boutons, contrôles, lignes) : rayon
+     resserré et uniforme, nettement plus discret que .neu-shape-card. */
+  .neu-shape-control {
+    border-radius: 0.875rem;
+  }
+}

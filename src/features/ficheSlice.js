@@ -1,13 +1,17 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { getLastFiche } from "../utils/lastFiche";
 
 /**
  * Gestion de la sélection d'une fiche dans l'application
+ * (restaurée depuis localStorage au démarrage, sauvegardée dans store.js).
+ * Elle appartient toujours à la collection sélectionnée : changer de
+ * collection efface la fiche sélectionnée.
  */
 
 export const ficheSlice = createSlice({
   name: "fiche",
   initialState: {
-    selectedFiche: null,
+    selectedFiche: getLastFiche(),
   },
   reducers: {
     selectFiche: (state, action) => {

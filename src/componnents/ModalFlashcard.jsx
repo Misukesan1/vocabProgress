@@ -1,144 +1,162 @@
 import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
+  DrawerContent,
+  DrawerHeader,
+  DrawerBody,
+  DrawerFooter,
   Button,
-  Form,
   Textarea,
   useDisclosure,
 } from "@heroui/react";
-import { useEffect, useState } from "react";
-import { addFlashcard, deleteFlashcard, editFlashcard } from "../database/flashcard";
+import BottomSheet from "./common/BottomSheet";
+import { useRef, useState } from "react";
 import { useDispatch } from "react-redux";
+import { addFlashcard, deleteFlashcard, editFlashcard, getFlashcard } from "../database/flashcard";
 import { showAlert } from "../features/alertSlice";
-import ModalConfirm from "./ModalConfirm";
+import ModalConfirm from "./common/ModalConfirm";
 
-export default function ModalFlashcard({
-  isOpen,
-  onOpenChange,
-  flashcard = null,
-  ficheId,
-}) {
+/**
+ * Création / modification d'une carte.
+ * En création, la modale reste ouverte après chaque ajout pour enchaîner la
+ * saisie de vocabulaire (Entrée = champ suivant / ajouter, Maj+Entrée = retour à la ligne).
+ * Remonter la modale avec une `key` différente à chaque ouverture pour
+ * réinitialiser les champs.
+ * `onEdited(carte)` / `onDeleted(id)` (optionnels) préviennent l'appelant après
+ * une modification / suppression (ex. la session d'entraînement en cours).
+ */
+export default function ModalFlashcard({ isOpen, onOpenChange, flashcard = null, ficheId, onEdited, onDeleted }) {
   const isNewFlashCard = flashcard === null;
-  const [frontCard, setFrontCard] = useState(isNewFlashCard ? "" : flashcard?.frontCard || "")
-  const [backCard, setBackCard] = useState(isNewFlashCard ? "" : flashcard?.backCard || "")
-  const [errorFrontCardMessage, setErrorFrontCardMessage] = useState("");
-  const [errorBackCardMessage, setErrorBackCardMessage] = useState("");
+  const [frontCard, setFrontCard] = useState(flashcard?.frontCard ?? "");
+  const [backCard, setBackCard] = useState(flashcard?.backCard ?? "");
+  const [errors, setErrors] = useState({});
+  const [addedCount, setAddedCount] = useState(0);
+  const frontRef = useRef(null);
+  const backRef = useRef(null);
+  const closeRef = useRef(null);
   const dispatch = useDispatch();
 
-  const { isOpen: isOpenConfirmDeleteModal, onOpen: onOpenConfirmDeleteModal, onOpenChange: onOpenChangeConfirmDeleteModal } = useDisclosure();
+  const {
+    isOpen: isOpenConfirmDelete,
+    onOpen: onOpenConfirmDelete,
+    onOpenChange: onOpenChangeConfirmDelete,
+  } = useDisclosure();
 
-  const handleSubmit = async (e, onClose) => {
-    e.preventDefault();
-    const frontCard = e.target[0].value;
-    const backCard = e.target[1].value;
-
+  const handleSubmit = async (onClose) => {
     try {
       if (isNewFlashCard) {
         await addFlashcard(ficheId, frontCard, backCard);
-        dispatch(
-          showAlert({ message: "Nouvelle carte créée.", type: "success" }),
-        );
-        onClose();
+        setAddedCount((count) => count + 1);
+        setFrontCard("");
+        setBackCard("");
+        frontRef.current?.focus();
       } else {
         await editFlashcard(flashcard.id, frontCard, backCard);
-        dispatch(
-          showAlert({ message: "Carte modifiée.", type: "success" }),
-        );
+        if (onEdited) {
+          const updated = await getFlashcard(flashcard.id);
+          if (updated) onEdited(updated);
+        }
+        dispatch(showAlert({ message: "Carte modifiée.", type: "success" }));
         onClose();
       }
     } catch (error) {
-      console.log(error);
-      if (error.frontcard) setErrorFrontCardMessage(error.frontcard);
-      if (error.backcard) setErrorBackCardMessage(error.backcard);
+      setErrors(error);
     }
   };
 
-   const handleConfirmDelete = async () => {
-      try {
-        await deleteFlashcard(flashcard.id);
-        dispatch(showAlert({ message: "Flashcard supprimée.", type: "success" }));
-      } catch (error) {
-        console.log(error);
-      }
-    };
+  // Entrée sur le recto passe au verso (s'il est vide), Entrée sur le verso ajoute
+  const handleKeyDown = (e, onClose, field) => {
+    if (e.key !== "Enter" || e.shiftKey) return;
+    e.preventDefault();
+    if (field === "front" && !backCard.trim()) backRef.current?.focus();
+    else handleSubmit(onClose);
+  };
 
-    const handleDeleteFlashcard = (onClose) => {
-      onClose()
-      onOpenConfirmDeleteModal()
-    }
-
-  useEffect(() => {
-    setErrorFrontCardMessage("");
-    setErrorBackCardMessage("");
-    setFrontCard(isNewFlashCard ? "" : flashcard?.frontCard || "")
-    setBackCard(isNewFlashCard ? "" : flashcard?.backCard || "")
-  }, [isOpen]);
+  const handleConfirmDelete = async () => {
+    await deleteFlashcard(flashcard.id);
+    onDeleted?.(flashcard.id);
+    dispatch(showAlert({ message: "Carte supprimée.", type: "success" }));
+    closeRef.current?.();
+  };
 
   return (
     <>
-      <Modal
-        isOpen={isOpen}
-        onOpenChange={onOpenChange}
-        isDismissable={false}
-        isKeyboardDismissDisabled={true}
-        placement="center"
-        backdrop="blur"
-      >
-        <ModalContent>
+      <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
+        <DrawerContent>
           {(onClose) => (
-            <Form className="contents" onSubmit={(e) => handleSubmit(e, onClose)}>
-              <ModalHeader>
-                {isNewFlashCard
-                  ? "Nouvelle carte."
-                  : "Modifier la carte."}
-              </ModalHeader>
-              <ModalBody className="gap-3">
+            <>
+              <DrawerHeader className="flex flex-col gap-0.5">
+                {isNewFlashCard ? "Nouvelles cartes" : "Modifier la carte"}
+                {isNewFlashCard && (
+                  <span className="text-xs font-normal text-neutral-500 dark:text-neutral-400">
+                    {addedCount > 0
+                      ? `${addedCount} carte${addedCount > 1 ? "s" : ""} ajoutée${addedCount > 1 ? "s" : ""}`
+                      : "Recto, Entrée, verso, Entrée : la carte est ajoutée."}
+                  </span>
+                )}
+              </DrawerHeader>
+              <DrawerBody className="gap-3">
                 <Textarea
+                  ref={frontRef}
+                  autoFocus
                   label="Recto"
-                  onChange={() => setErrorFrontCardMessage("")}
-                  isInvalid={errorFrontCardMessage.length > 0}
-                  errorMessage={errorFrontCardMessage}
-                  defaultValue={isNewFlashCard ? "" : flashcard?.frontCard}
-                  description={`${frontCard.length}/1000`}
-                  onValueChange={setFrontCard}
+                  minRows={1}
+                  value={frontCard}
+                  onValueChange={(value) => {
+                    setFrontCard(value);
+                    setErrors((prev) => ({ ...prev, frontcard: undefined }));
+                  }}
+                  onKeyDown={(e) => handleKeyDown(e, onClose, "front")}
+                  isInvalid={!!errors.frontcard}
+                  errorMessage={errors.frontcard}
                   maxLength={1000}
                 />
                 <Textarea
+                  ref={backRef}
                   label="Verso"
-                  onChange={() => setErrorBackCardMessage("")}
-                  isInvalid={errorBackCardMessage.length > 0}
-                  errorMessage={errorBackCardMessage}
-                  defaultValue={isNewFlashCard ? "" : flashcard?.backCard}
-                  description={`${backCard.length}/1000`}
-                  onValueChange={setBackCard}
+                  minRows={1}
+                  value={backCard}
+                  onValueChange={(value) => {
+                    setBackCard(value);
+                    setErrors((prev) => ({ ...prev, backcard: undefined }));
+                  }}
+                  onKeyDown={(e) => handleKeyDown(e, onClose, "back")}
+                  isInvalid={!!errors.backcard}
+                  errorMessage={errors.backcard}
                   maxLength={1000}
                 />
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="light" color="danger" onPress={onClose}>
-                  Retour
-                </Button>
-                <Button color="primary" type="submit">
-                  {isNewFlashCard ? "Créer" : "Modifier"}
-                </Button>
-                {flashcard &&
-                  <Button onPress={() => handleDeleteFlashcard(onClose)} color="danger">
+              </DrawerBody>
+              <DrawerFooter>
+                {!isNewFlashCard && (
+                  <Button
+                    color="danger"
+                    variant="light"
+                    className="mr-auto"
+                    onPress={() => {
+                      // La modale reste ouverte sous la confirmation : la fermer ici la
+                      // démonterait (key liée à isOpen chez l'appelant) avec la confirmation
+                      closeRef.current = onClose;
+                      onOpenConfirmDelete();
+                    }}
+                  >
                     Supprimer
                   </Button>
-                }
-              </ModalFooter>
-            </Form>
+                )}
+                <Button variant="light" onPress={onClose}>
+                  {isNewFlashCard && addedCount > 0 ? "Terminé" : "Annuler"}
+                </Button>
+                <Button color="primary" onPress={() => handleSubmit(onClose)}>
+                  {isNewFlashCard ? "Ajouter" : "Enregistrer"}
+                </Button>
+              </DrawerFooter>
+            </>
           )}
-        </ModalContent>
-      </Modal>
+        </DrawerContent>
+      </BottomSheet>
 
       <ModalConfirm
-        isOpen={isOpenConfirmDeleteModal}
-        onOpenChange={onOpenChangeConfirmDeleteModal}
-        message="Etes-vous sur de vouloir supprimer cette flashcard ?"
+        isOpen={isOpenConfirmDelete}
+        onOpenChange={onOpenChangeConfirmDelete}
+        message="Supprimer définitivement cette carte ?"
+        confirmLabel="Supprimer"
         onConfirm={handleConfirmDelete}
       />
     </>

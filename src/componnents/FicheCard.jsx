@@ -1,61 +1,38 @@
-import { Card, CardBody } from "@heroui/react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
-import { selectFiche } from "../features/ficheSlice";
 import { useLiveQuery } from "dexie-react-hooks";
-import { getFlashcardsFromFiche } from "../database/flashcard";
+import { countFlashcardsFromFiche } from "../database/flashcard";
+import { selectFiche } from "../features/ficheSlice";
 
-export default function FicheCard({ name, description, fiche }) {
-  const flashcards = useLiveQuery(() => getFlashcardsFromFiche(fiche.id));
-  const navigate = useNavigate();
-
+export default function FicheCard({ fiche }) {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const isSelected = useSelector((state) => state.fiche.selectedFiche?.id === fiche.id);
+  const cardCount = useLiveQuery(() => countFlashcardsFromFiche(fiche.id), [fiche.id]) ?? 0;
 
-  const handleDetails = () => {
+  const handleOpen = () => {
     dispatch(selectFiche(fiche));
     navigate(`/fiche/${fiche.id}`);
   };
 
   return (
-    <>
-      <Card
-        shadow="sm"
-        radius="sm"
-        className="border border-divider/50"
-      >
-        <CardBody 
-          className="px-4 py-3 cursor-pointer transition-opacity active:opacity-70"
-          onClick={handleDetails}
-        >
-          <div className="flex flex-row items-center justify-between">
-            <div className="flex flex-col">
-              <p className="font-semibold text-foreground">{name}</p>
-              {description && (
-                <p className="text-xs text-foreground/50">{description}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex gap-5">
-            <p className="text-sm font-light text-foreground">
-              Cartes :{" "}
-              <span className="font-semibold">{flashcards?.length}</span>
-            </p>
-            <p className="text-sm font-light text-foreground">
-              A revoir :{" "}
-              <span className="font-semibold text-danger">
-                {fiche.countErrors}
-              </span>
-            </p>
-            <p className="text-sm font-light text-foreground">
-              Maîtrisées :{" "}
-              <span className="font-semibold text-success">
-                {flashcards?.filter((flashcard) => flashcard.desactive).length}
-              </span>
-            </p>
-          </div>
-        </CardBody>
-      </Card>
-    </>
+    <button
+      type="button"
+      onClick={handleOpen}
+      aria-pressed={isSelected}
+      className={`neu-shape-card neu-focusable flex w-full items-center justify-between px-5 py-4 text-left transition-all active:scale-[0.98] ${
+        isSelected ? "neu-pressed text-primary" : "neu-raised text-neutral-800 dark:text-neutral-100"
+      }`}
+    >
+      <div className="min-w-0">
+        <p className="font-medium">{fiche.name}</p>
+        {fiche.description && (
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">{fiche.description}</p>
+        )}
+      </div>
+      <span className="shrink-0 pl-3 text-xs text-neutral-500 dark:text-neutral-400">
+        {cardCount} carte{cardCount > 1 ? "s" : ""}
+      </span>
+    </button>
   );
 }

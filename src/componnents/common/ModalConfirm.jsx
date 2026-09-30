@@ -13,48 +13,36 @@ export default function ModalConfirm({
   onOpenChange, // useDisclosure (heroUi)
   message, // message d'information pour le modal de confirmation
   onConfirm, // fonction a exécuter lors de la confirmation du modal
+  confirmLabel = "Confirmer",
 }) {
-    
   return (
     <Modal
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      isDismissable={false}
-      isKeyboardDismissDisabled={true}
       placement="center"
       backdrop="blur"
     >
       <ModalContent>
         {(onClose) => (
           <>
-            <ModalHeader>
-              <Button
-                variant="light"
-                isDisabled
-                className="mx-auto"
-                isIconOnly
-                color="danger"
-                radius="full"
-                size="lg"
-              >
-                <TriangleAlert size={32} />
-              </Button>
+            <ModalHeader className="flex justify-center text-danger">
+              <TriangleAlert size={32} />
             </ModalHeader>
             <ModalBody>
               <p className="text-center">{message}</p>
             </ModalBody>
             <ModalFooter>
-              <Button variant="light" color="danger" onPress={onClose}>
+              <Button variant="light" onPress={onClose}>
                 Annuler
               </Button>
               <Button
-                color="primary"
-                onPress={() => {
-                  onConfirm();
+                color="danger"
+                onPress={async () => {
+                  await onConfirm();
                   onClose();
                 }}
               >
-                Confirmer
+                {confirmLabel}
               </Button>
             </ModalFooter>
           </>

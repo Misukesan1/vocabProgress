@@ -7,7 +7,6 @@ import { db } from "./db";
  * @property {string} backCard
  * @property {boolean} desactive
  * @property {number} ficheId
- * @property {number} errors
  */
 
 // * Private methods
@@ -46,10 +45,11 @@ async function validationFlashcard({frontCard, backCard}) {
  * @throws {Object} objet avec les erreurs de validation
  * @returns {Promise<number>} l'id de la flashcard crée
  */
-export const addFlashcard = async (ficheId, frontCard, backCard, desactive = false, errors = 0) => {
-    const front = frontCard.trim().charAt(0).toUpperCase() + frontCard.trim().slice(1)
-    const back = backCard.trim().charAt(0).toUpperCase() + backCard.trim().slice(1)
-    if (await validationFlashcard({frontCard: front, backCard: back})) return db.flashcard.add({ficheId, frontCard: front, backCard: back, desactive, errors})
+export const addFlashcard = async (ficheId, frontCard, backCard, desactive = false) => {
+    // Texte gardé tel que saisi (pas de majuscule forcée : romaji, acronymes...)
+    const front = frontCard.trim()
+    const back = backCard.trim()
+    if (await validationFlashcard({frontCard: front, backCard: back})) return db.flashcard.add({ficheId, frontCard: front, backCard: back, desactive})
 }
 
 /**
@@ -61,8 +61,9 @@ export const addFlashcard = async (ficheId, frontCard, backCard, desactive = fal
  * @returns {Promise<number>} 1 si la modification à trouvé un résultat
  */
 export const editFlashcard = async (id, frontCard, backCard) => {
-    const front = frontCard.trim().charAt(0).toUpperCase() + frontCard.trim().slice(1)
-    const back = backCard.trim().charAt(0).toUpperCase() + backCard.trim().slice(1)
+    // Texte gardé tel que saisi (pas de majuscule forcée : romaji, acronymes...)
+    const front = frontCard.trim()
+    const back = backCard.trim()
     if (await validationFlashcard({frontCard: front, backCard: back})) return db.flashcard.update(id, {frontCard: front, backCard: back})
 }
 
@@ -94,6 +95,36 @@ export const getFlashcardsFromFiche = (ficheId) => {
 }
 
 /**
+ * Nombre de flashcards d'une fiche
+ * @param {number} ficheId
+ * @returns {Promise<number>}
+ */
+export const countFlashcardsFromFiche = (ficheId) => {
+    return db.flashcard.where({ficheId: ficheId}).count()
+}
+
+/**
+ * Avancement d'une fiche : nombre de cartes et de cartes maîtrisées
+ * @param {number} ficheId
+ * @returns {Promise<{total: number, mastered: number}>}
+ */
+export const getFicheProgress = async (ficheId) => {
+    const flashcards = await db.flashcard.where({ficheId: ficheId}).toArray()
+    return { total: flashcards.length, mastered: flashcards.filter(f => f.desactive).length }
+}
+
+/**
+ * Chiffres d'une collection : fiches, cartes, cartes à réviser (non maîtrisées)
+ * @param {number} profileId
+ * @returns {Promise<{fiches: number, cards: number, toReview: number}>}
+ */
+export const getCollectionStats = async (profileId) => {
+    const ficheIds = await db.fiche.where({profileId: profileId}).primaryKeys()
+    const flashcards = ficheIds.length ? await db.flashcard.where('ficheId').anyOf(ficheIds).toArray() : []
+    return { fiches: ficheIds.length, cards: flashcards.length, toReview: flashcards.filter(f => !f.desactive).length }
+}
+
+/**
  * Liste des flashcards a afficher pour l'entrainement
  * @param {number} ficheId 
  * @returns {Promise<Flashcard[]>}
@@ -112,46 +143,16 @@ export const getDeselectedFlashcards = (ficheId) => {
 }
 
 /**
- * Liste des flashcards avec erreurs
- * @param {number} ficheId 
- * @returns {Promise<Flashcard[]>} 
- */
-export const getErrorsFlashcards = (ficheId) => {
-    return db.flashcard.where({ficheId: ficheId}).filter(f => f.errors > 0).reverse().sortBy('errors')
-}
-
-/**
  * Activer ou désactiver une flashcard
  * @param {number} id 
  * @param {boolean} currentStatus le status actuel de la flashcard
  * @returns {Promise<Flashcard | undefined>}
  */
 export const toggleStatusFlashcard = async (id, currentStatus) => {
-    if (!currentStatus) await db.flashcard.update(id, {errors: 0})
     await db.flashcard.update(id, {desactive: !currentStatus})
     return db.flashcard.get(id)
 }
 
-/**
- * Incrémenter l'erreur de la flahcard de 1
- * @param {number} id 
- * @returns {Promise<Flashcard | undefined>}
- */
-export const incrementError = async (id) => {
-    const selectFlashcard = await db.flashcard.get(id)
-    await db.flashcard.update(id, {errors: selectFlashcard.errors += 1})
-    return db.flashcard.get(id)
-}
-
-/**
- * Réinitialiser les erreurs de la flashcard à 0
- * @param {number} id 
- * @returns {Promise<Flashcard | undefined>}
- */
-export const resetErrors = async (id) => {
-    await db.flashcard.update(id, {errors: 0})
-    return db.flashcard.get(id)
-}
 /**
  * Activer toutes les flashcards d'une fiche
  * @param {number} idFiche
@@ -160,7 +161,7 @@ export const resetErrors = async (id) => {
 export const activeAllFlashcards = async (idFiche) => {
     const flashcards = await db.flashcard.where({ficheId: idFiche}).toArray()
     for (const flashcard of flashcards) {
-        await db.flashcard.update(flashcard.id, {desactive: false, errors: 0})
+        await db.flashcard.update(flashcard.id, {desactive: false})
     }
 }
 

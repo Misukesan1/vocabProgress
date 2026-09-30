@@ -3,131 +3,104 @@ import {
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
-  Button,
   useDisclosure,
 } from "@heroui/react";
-import { Check, Ellipsis, Pencil, Trash, X } from "lucide-react";
-import ModalFiche from "./ModalFiche";
-import { deleteFiche } from "../database/fiche";
-import { useDispatch } from "react-redux";
-import { selectFiche } from "../features/ficheSlice";
-import { showAlert } from "../features/alertSlice";
+import { Ellipsis, Pencil, RotateCcw, Trash } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
-import ModalConfirm from "./ModalConfirm";
+import ModalFiche from "./ModalFiche";
+import ModalConfirm from "./common/ModalConfirm";
+import { deleteFiche } from "../database/fiche";
 import { activeAllFlashcards } from "../database/flashcard";
+import { selectFiche } from "../features/ficheSlice";
+import { clearTraining } from "../features/trainingSlice";
+import { showAlert } from "../features/alertSlice";
 
+/**
+ * Actions d'une fiche : modifier, remettre les cartes en révision, supprimer
+ */
 export default function DropdownMenuFiche({ fiche, flashcards }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const trainingFicheId = useSelector((state) => state.training.ficheId);
+  const masteredCount = flashcards?.filter((card) => card.desactive).length ?? 0;
 
-  const {
-    isOpen: isOpenFicheModal,
-    onOpen: onOpenFicheModal,
-    onOpenChange: onOpenChangeFicheModal,
-  } = useDisclosure();
+  const { isOpen: isOpenEdit, onOpen: onOpenEdit, onOpenChange: onOpenChangeEdit } = useDisclosure();
+  const { isOpen: isOpenDelete, onOpen: onOpenDelete, onOpenChange: onOpenChangeDelete } = useDisclosure();
+  const { isOpen: isOpenReset, onOpen: onOpenReset, onOpenChange: onOpenChangeReset } = useDisclosure();
 
-  const {
-    isOpen: isOpenConfirmFicheModal,
-    onClose: onCloseConfirmFicheModal,
-    onOpen: onOpenConfirmFicheModal,
-    onOpenChange: onOpenChangeConfirmFicheModal,
-  } = useDisclosure();
-
-  const {
-    isOpen: isOpenConfirmModal,
-    onOpen: onOpenConfirmModal,
-    onOpenChange: onOpenChangeConfirmModal,
-  } = useDisclosure();
-
-  const handleDelete = async (fiche) => {
-    try {
-      await deleteFiche(fiche.id);
-      dispatch(selectFiche(null));
-      dispatch(showAlert({ message: "Fiche supprimée.", type: "success" }));
-      onCloseConfirmFicheModal();
-      navigate("/fiches");
-    } catch (error) {
-      console.log(error);
-    }
+  const handleDelete = async () => {
+    await deleteFiche(fiche.id);
+    if (trainingFicheId === fiche.id) dispatch(clearTraining());
+    dispatch(selectFiche(null));
+    dispatch(showAlert({ message: "Fiche supprimée.", type: "success" }));
+    navigate("/fiches");
   };
 
-  const handleSelectAllFlashcards = () => {
-    activeAllFlashcards(Number(fiche.id));
-    dispatch(
-      showAlert({
-        message: "Toutes les cartes sont maintenant à revoir.",
-        type: "success",
-      }),
-    );
+  const handleResetAll = async () => {
+    await activeAllFlashcards(fiche.id);
+    dispatch(showAlert({ message: "Toutes les cartes sont à nouveau en révision.", type: "success" }));
+  };
+
+  const handleAction = (key) => {
+    if (key === "update") onOpenEdit();
+    if (key === "reset") onOpenReset();
+    if (key === "delete") onOpenDelete();
   };
 
   return (
     <>
-      <Dropdown>
+      <Dropdown placement="bottom-end">
         <DropdownTrigger>
-          <Button isIconOnly>
-            <Ellipsis size={18} />
-          </Button>
-        </DropdownTrigger>
-        <DropdownMenu aria-label="Static Actions">
-          {flashcards?.filter((card) => card.desactive).length > 0 && (
-            <DropdownItem
-              key="activate"
-              onPress={onOpenConfirmModal}
-              startContent={<Check size={15} />}
-              className="text-primary"
-              color="primary"
-            >
-              Remettre les cartes en révision
-            </DropdownItem>
-          )}
-
-          <DropdownItem
-            key="update"
-            onPress={onOpenFicheModal}
-            startContent={<Pencil size={15} />}
-            className="text-secondary"
-            color="secondary"
+          <button
+            type="button"
+            aria-label="Actions de la fiche"
+            className="neu-btn neu-focusable flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-600 dark:text-neutral-300"
           >
+            <Ellipsis size={18} />
+          </button>
+        </DropdownTrigger>
+        <DropdownMenu
+          aria-label="Actions de la fiche"
+          onAction={handleAction}
+          disabledKeys={masteredCount === 0 ? ["reset"] : []}
+        >
+          <DropdownItem key="update" startContent={<Pencil size={15} />}>
             Modifier
           </DropdownItem>
-          <DropdownItem
-            key="delete"
-            onPress={onOpenConfirmFicheModal}
-            startContent={<Trash size={15} />}
-            className="text-danger"
-            color="danger"
-          >
+          <DropdownItem key="reset" startContent={<RotateCcw size={15} />}>
+            Remettre les cartes en révision
+          </DropdownItem>
+          <DropdownItem key="delete" startContent={<Trash size={15} />} className="text-danger" color="danger">
             Supprimer
           </DropdownItem>
         </DropdownMenu>
       </Dropdown>
 
-      <ModalFiche
-        isOpen={isOpenFicheModal}
-        onOpenChange={onOpenChangeFicheModal}
-        fiche={fiche}
-      />
+      <ModalFiche key={`edit-fiche-${isOpenEdit}`} isOpen={isOpenEdit} onOpenChange={onOpenChangeEdit} fiche={fiche} />
 
       <ModalConfirm
-        isOpen={isOpenConfirmFicheModal}
-        onOpenChange={onOpenChangeConfirmFicheModal}
-        message={`Etes-vous sur de vouloir supprimer cette fiche "${fiche?.name}" ? 
-          ${
-            flashcards?.length === 0
-              ? `Cette fiche ne contient pas de cartes et cette action est irréversible.`
-              : `Cette action supprimera également les ${flashcards?.length} cartes associées et est irréversible.`
-          }`}
-        onConfirm={() => handleDelete(fiche, onCloseConfirmFicheModal)}
-      />
-
-      <ModalConfirm
-        isOpen={isOpenConfirmModal}
-        onOpenChange={onOpenChangeConfirmModal}
+        isOpen={isOpenReset}
+        onOpenChange={onOpenChangeReset}
         message={
-          "Etes-vous sur de vouloir remettre toutes les cartes en révision ?"
+          masteredCount > 1
+            ? `Remettre les ${masteredCount} cartes maîtrisées en révision ?`
+            : "Remettre la carte maîtrisée en révision ?"
         }
-        onConfirm={handleSelectAllFlashcards}
+        confirmLabel="Remettre en révision"
+        onConfirm={handleResetAll}
+      />
+
+      <ModalConfirm
+        isOpen={isOpenDelete}
+        onOpenChange={onOpenChangeDelete}
+        message={
+          flashcards?.length
+            ? `Supprimer la fiche « ${fiche?.name} » et ${flashcards.length > 1 ? `ses ${flashcards.length} cartes` : "sa carte"} ? Cette action est irréversible.`
+            : `Supprimer la fiche « ${fiche?.name} » ? Cette action est irréversible.`
+        }
+        confirmLabel="Supprimer"
+        onConfirm={handleDelete}
       />
     </>
   );

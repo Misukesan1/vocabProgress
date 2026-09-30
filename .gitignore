@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Captures et journaux des tests Playwright (agents)
+.playwright-mcp

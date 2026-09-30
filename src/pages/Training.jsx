@@ -1,303 +1,290 @@
-import { useDispatch, useSelector } from "react-redux";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import FlashCardTraining from "../componnents/FlashCardTraining";
-import BoxContent from "../componnents/BoxContent";
-import { Button, Progress, Switch } from "@heroui/react";
-import { ArrowLeft, BadgeCheck, BookAlert, CheckCheck } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { useLiveQuery } from "dexie-react-hooks";
+import { Progress, useDisclosure } from "@heroui/react";
+import { ArrowLeftRight, BadgeCheck, RotateCw, X } from "lucide-react";
+import { getFiche } from "../database/fiche";
+import { getSelectedFlashcards, toggleStatusFlashcard } from "../database/flashcard";
 import {
   clearTraining,
   deselectWord,
   flipCard,
   incrementCurrentIndex,
   nextRoundTraining,
+  removeTrainingCard,
   reverseCard,
+  startTraining,
+  updateTrainingCard,
 } from "../features/trainingSlice";
-import {
-  getErrorsFlashcards,
-  getSelectedFlashcards,
-  incrementError,
-  toggleStatusFlashcard,
-} from "../database/flashcard";
-import { useLiveQuery } from "dexie-react-hooks";
+import PageStub from "../componnents/common/PageStub";
+import ModalConfirm from "../componnents/common/ModalConfirm";
 import { showAlert } from "../features/alertSlice";
-import { useState } from "react";
+import DropdownMenuTrainingCard from "../componnents/DropdownMenuTrainingCard";
+
+function shuffle(cards) {
+  const shuffled = [...cards];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+function formatDuration(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  return `${Math.floor(totalSec / 60)}:${(totalSec % 60).toString().padStart(2, "0")}`;
+}
 
 export default function Training() {
   const { id } = useParams();
-  const flashcardsList = useSelector((state) => state.training.flashcards);
-  const currentIndex = useSelector((state) => state.training.currentIndex);
-  const isFlipped = useSelector((state) => state.training.isFliped);
-  const isReversed = useSelector((state) => state.training.isReversed);
-  const turnNumber = useSelector((state) => state.training.tours);
-  const wordsDeselected = useSelector((state) => state.training.deselectWords);
-  const trainingMode = useSelector((state) => state.training.trainingMode)
-  const totalWordsDeselected = useSelector(
-    (state) => state.training.totalDeselectWords,
-  );
-  const progress = Math.round(
-    ((currentIndex + 1) / flashcardsList.length) * 100,
-  );
-
-  const selectedFiche = useSelector((state) => state.fiche.selectedFiche);
-  // const selectedsFlashcards = useLiveQuery(
-  //   () => (selectedFiche ? getSelectedFlashcards(selectedFiche?.id) : []),
-  //   [selectedFiche],
-  // );
-  const selectedsFlashcards = useLiveQuery(() => {
-    if (!selectedFiche) return []
-    if (trainingMode === "hard") return getErrorsFlashcards(selectedFiche?.id)
-      return getSelectedFlashcards(selectedFiche?.id)
-  }, [selectedFiche, trainingMode])
-
-  const [toggleReversed, setToggleReversed] = useState(isReversed)
-  const [sessionStart] = useState(new Date()); // date de début de session, ne change jamais
-  const [turnStart, setTurnStart] = useState(new Date()); // date de début du tour, se remet à jour
-  const [formatedTimeTurn, setFormattedTimeTurn] = useState("");
-  const [formatedTimeSession, setFormattedTimeSession] = useState("");
-  const [endTraining, setEndTraining] = useState(false);
+  const ficheId = Number(id);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const calculateTime = () => {
-    if (currentIndex === flashcardsList.length - 1) {
-        const now = new Date()
-        const diffTurn = now - turnStart
-        const secTurn = Math.floor((diffTurn / 1000) % 60)
-        const minTurn = Math.floor(diffTurn / 1000 / 60)
-        setFormattedTimeTurn(`${minTurn}:${secTurn.toString().padStart(2, "0")}`)
-        const diffSession = now - sessionStart
-        const secSession = Math.floor((diffSession / 1000) % 60)
-        const minSession = Math.floor(diffSession / 1000 / 60)
-        setFormattedTimeSession(`${minSession}:${secSession.toString().padStart(2, "0")}`)
-    }
-}
+  const training = useSelector((state) => state.training);
+  const { flashcards, currentIndex, isFliped, isReversed, tours, deselectWords, totalDeselectWords } = training;
+  const currentCard = flashcards[currentIndex];
+  const isSessionReady = training.ficheId === ficheId;
 
-  /**
-   * Au clic sur la carte ou sur le bouton suivant
-   */
-  const onPress = () => {
-    if (isFlipped) {
-      calculateTime()
-      dispatch(flipCard(false));
-      dispatch(incrementCurrentIndex());
-    } else {
-      dispatch(flipCard(!isFlipped));
-    }
+  const fiche = useLiveQuery(async () => (await getFiche(ficheId)) ?? null, [ficheId]);
+  const remainingCards = useLiveQuery(() => getSelectedFlashcards(ficheId), [ficheId]);
+
+  const [sessionStart] = useState(() => Date.now());
+  const quittingRef = useRef(false);
+  const busyRef = useRef(false);
+
+  // Démarrage (ou reprise) de la session pour cette fiche
+  useEffect(() => {
+    if (quittingRef.current || !fiche) return;
+    if (training.ficheId === ficheId) return;
+
+    getSelectedFlashcards(ficheId).then((cards) => {
+      dispatch(startTraining({ ficheId, flashcards: shuffle(cards) }));
+    });
+  }, [fiche, ficheId, training.ficheId, dispatch]);
+
+  const quit = () => {
+    quittingRef.current = true;
+    navigate(`/fiche/${ficheId}`);
+    dispatch(clearTraining());
   };
 
-  const reverseCardTraining = () => {
-    dispatch(reverseCard())
-    setToggleReversed(!toggleReversed)
-  }
+  // Quitter en plein tour demande confirmation (la position dans le tour est perdue)
+  const { isOpen: isOpenQuit, onOpen: onOpenQuit, onOpenChange: onOpenChangeQuit } = useDisclosure();
+  const requestQuit = () => {
+    if (currentCard && currentIndex > 0) onOpenQuit();
+    else quit();
+  };
 
-  const deselectFlashcard = () => {
+  const finish = () => {
+    const plural = totalDeselectWords > 1 ? "s" : "";
+    dispatch(
+      showAlert({
+        message: `Session terminée : ${totalDeselectWords} carte${plural} maîtrisée${plural}. Bravo !`,
+        type: "success",
+      }),
+    );
+    quit();
+  };
+
+  // Clic sur la carte : recto → verso, puis verso → carte suivante
+  const pressCard = () => {
+    if (!currentCard || busyRef.current) return;
+    if (!isFliped) {
+      dispatch(flipCard(true));
+      return;
+    }
+    dispatch(flipCard(false));
+    dispatch(incrementCurrentIndex());
+  };
+
+  // Écrit en base : on bloque les doubles appuis pendant l'écriture
+  const master = async () => {
+    if (!currentCard || !isFliped || busyRef.current) return;
+    busyRef.current = true;
     try {
-      toggleStatusFlashcard(
-        flashcardsList[currentIndex].id,
-        flashcardsList[currentIndex].desactive,
-      );
-      calculateTime()
-      dispatch(flipCard(false));
-      dispatch(incrementCurrentIndex());
+      await toggleStatusFlashcard(currentCard.id, currentCard.desactive);
       dispatch(deselectWord());
-      if (selectedsFlashcards?.length === 1) setEndTraining(true);
-      dispatch(
-        showAlert({
-          message: "Vous maîtrisez cette carte.",
-          type: "success",
-        }),
-      );
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const pressBtnARevoir = () => {
-    try {
-      incrementError(flashcardsList[currentIndex].id)
-      calculateTime()
-      dispatch(
-        showAlert({
-          message: `Vous marquez cette carte comme "difficile".`,
-          type: "success",
-        }),
-      );
       dispatch(flipCard(false));
       dispatch(incrementCurrentIndex());
-    } catch (error) {
-      console.log(error)
+    } finally {
+      busyRef.current = false;
     }
+  };
+
+  const startNextRound = () => {
+    dispatch(nextRoundTraining(shuffle(remainingCards)));
+  };
+
+  if (fiche === null) {
+    return <PageStub title="Fiche introuvable" description="Elle a peut-être été supprimée." />;
+  }
+  if (!fiche || !isSessionReady) return null;
+
+  // Aucune carte à réviser au démarrage
+  if (flashcards.length === 0) {
+    return (
+      <div className="neu-raised neu-shape-card mx-auto mt-6 flex max-w-lg flex-col items-center gap-4 p-6 text-center">
+        <p className="text-neutral-600 dark:text-neutral-300">
+          Aucune carte à réviser dans cette fiche.
+        </p>
+        <button
+          type="button"
+          onClick={quit}
+          className="neu-btn neu-shape-control neu-focusable px-4 py-2 text-sm font-medium text-primary"
+        >
+          Retour à la fiche
+        </button>
+      </div>
+    );
   }
 
-  /**
-   * clic sur le bouton continuer pour commencer un nouveau tour
-   */
-  const againTraining = () => {
-    setTurnStart(new Date());
-    const cards = trainingMode === "hard" 
-        ? selectedsFlashcards.filter(f => f.errors > 0)
-        : selectedsFlashcards
-    const shuffled = [...cards].sort(() => Math.random() - 0.5)
-    dispatch(nextRoundTraining(shuffled))
-  };
+  const isRoundOver = !currentCard;
+  const progressValue = Math.round((Math.min(currentIndex, flashcards.length) / flashcards.length) * 100);
+  const shownFace = isReversed !== isFliped ? "back" : "front";
 
   return (
-    <>
-      <Button
-        size="sm"
-        color="danger"
-        radius="full"
-        className="ml-3 w-fit"
-        variant="light"
-        startContent={<ArrowLeft size={16} />}
-        onPress={() => {
-          dispatch(clearTraining());
-          // setEndTraining(false)
-          navigate(`/fiche/${id}`);
-        }}
-      >
-        Quitter la révision
-      </Button>
-
-      {/* Information de la fiche sélectionnée à réviser et de l'entrainement en cours */}
-      <BoxContent>
-        <h2 className="text-center">
-          Révision de la fiche :{" "}
-          <span className="font-bold">{selectedFiche?.name}</span>
-        </h2>
-        <div className="mt-1">
-          <p className="flex justify-between mb-1">
-            Progression :{" "}
-            <span className="font-light">
-              {flashcardsList[currentIndex] !== undefined
-                ? `${currentIndex + 1}/${flashcardsList.length}`
-                : `${flashcardsList.length}/${flashcardsList.length}`}
-            </span>
-          </p>
-          <Progress
-            size="md"
-            aria-label="Révision en cours ..."
-            className="w-full"
-            value={progress}
-          />
+    <div className="mx-auto flex max-w-lg flex-col gap-5">
+      {/* En-tête de session */}
+      <section className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="truncate text-base font-semibold text-neutral-700 dark:text-neutral-200">{fiche.name}</h2>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              Révision · Tour {tours + 1} · {totalDeselectWords} maîtrisée
+              {totalDeselectWords > 1 ? "s" : ""}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={requestQuit}
+            aria-label="Quitter la révision"
+            title="Quitter la révision"
+            className="neu-btn neu-focusable flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-500 dark:text-neutral-400"
+          >
+            <X size={18} />
+          </button>
         </div>
-        <div className="mt-1">
-          <p>
-            Tour n° : <span className="font-light">{turnNumber + 1}</span>
-          </p>
-          <p>
-            Nombre de cartes maîtrisées :{" "}
-            <span className="font-light">{totalWordsDeselected}</span>
-          </p>
+        <div className="flex items-center gap-3">
+          <Progress aria-label="Progression du tour" size="sm" value={progressValue} className="flex-1" />
+          <span className="text-xs tabular-nums text-neutral-500 dark:text-neutral-400">
+            {Math.min(currentIndex + 1, flashcards.length)}/{flashcards.length}
+          </span>
         </div>
-      </BoxContent>
+      </section>
 
-      {flashcardsList[currentIndex] !== undefined &&
-        <BoxContent>
-          <div className="flex flex-col justify-center items-center gap-1">
-            <Switch size="sm" isSelected={toggleReversed} onChange={reverseCardTraining} />
-            <p className="text-xs font-light">{toggleReversed ? "Face B / Face A" : "Face A / Face B"}</p>
-          </div>
-        </BoxContent>
-      }
-
-      {!isFlipped && flashcardsList[currentIndex] !== undefined && (
-        <p className="text-center mt-2 font-light italic">
-          Cliquez sur la carte pour la retourner.
-        </p>
-      )}
-
-      {/* Affichage de la carte actuelle */}
-      {flashcardsList[currentIndex] !== undefined && (
-        <FlashCardTraining
-          frontCard={flashcardsList[currentIndex]?.frontCard}
-          backCard={flashcardsList[currentIndex]?.backCard}
-          isFlipped={isFlipped}
-          onPress={onPress}
-          isReversed={isReversed}
-        />
-      )}
-
-      {/* Affichage des options lorsque la carte est retournée */}
-      {isFlipped && (
-        <div className="w-60 grid grid-cols-3 mx-auto gap-2">
-
-          <div className="flex flex-col justify-center items-center">
-            <Button onPress={pressBtnARevoir} radius="full" isIconOnly variant="flat" color="danger">
-              <BookAlert />
-            </Button>
-            <p className="text-xs font-light">A revoir</p>
-          </div>
-
-          <div className="flex flex-col justify-center items-center">
-            <Button onPress={onPress} radius="full" isIconOnly variant="flat" color="primary">
-              <CheckCheck />
-            </Button>
-            <p className="text-xs font-light">Je connais</p>
-          </div>
-
-          <div className="flex flex-col justify-center items-center">
-            <Button onPress={deselectFlashcard} radius="full" isIconOnly variant="flat" color="success">
-              <BadgeCheck />
-            </Button>
-            <p className="text-xs font-light">Je maîtrise</p>
-          </div>
-
-        </div>
-      )}
-
-      {/* Affichage de fin d'entrainement pour relancer un tour ou si tous les mots ont été déselectionnés */}
-      {flashcardsList[currentIndex] === undefined && (
-        <BoxContent>
-          {selectedsFlashcards?.length === 0 || endTraining ? (
+      {isRoundOver ? (
+        <section className="neu-raised neu-shape-card flex flex-col items-center gap-4 p-6 text-center">
+          {remainingCards?.length === 0 ? (
             <>
-              <p className="text-center font-bold">Révision arrêtée.</p>
-              <p className="text-center mb-3">
-                Temps total de la révision : {formatedTimeSession}
+              <p className="text-lg font-semibold text-success">Toutes les cartes sont maîtrisées !</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                {totalDeselectWords} carte{totalDeselectWords > 1 ? "s" : ""} maîtrisée
+                {totalDeselectWords > 1 ? "s" : ""} en {tours + 1} tour{tours > 0 ? "s" : ""} ·{" "}
+                {formatDuration(Date.now() - sessionStart)}
               </p>
             </>
           ) : (
             <>
-              <p className="text-center font-bold">Tour terminé !</p>
-              <p className="text-center mb-3">
-                Vous avez maîtrisé {wordsDeselected} cartes sur un total de{" "}
-                {flashcardsList.length}.
-              </p>
-              <p className="text-center mb-3">
-                Temps total de la révision : {formatedTimeSession}
+              <p className="text-lg font-semibold text-neutral-800 dark:text-neutral-100">Tour {tours + 1} terminé</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                {deselectWords} maîtrisée{deselectWords > 1 ? "s" : ""} sur {flashcards.length} ·{" "}
+                {remainingCards?.length} restante{remainingCards?.length > 1 ? "s" : ""} ·{" "}
+                {formatDuration(Date.now() - sessionStart)}
               </p>
             </>
           )}
-
-          <div className="flex justify-center gap-3">
-            {(selectedsFlashcards?.length > 0 && !endTraining) && (
-              <Button
-                size="sm"
-                color="primary"
-                radius="full"
-                className="w-fit"
-                onPress={againTraining}
+          <div className="flex w-full flex-col gap-2">
+            {remainingCards?.length > 0 && (
+              <button
+                type="button"
+                autoFocus
+                onClick={startNextRound}
+                className="neu-btn neu-shape-control neu-focusable flex items-center justify-center gap-2 py-3 font-semibold text-primary"
               >
-                Continuer à réviser
-              </Button>
+                <RotateCw size={17} />
+                Nouveau tour ({remainingCards.length} carte{remainingCards.length > 1 ? "s" : ""})
+              </button>
             )}
-            <Button
-              size="sm"
-              color="danger"
-              radius="full"
-              className="w-fit"
-              onPress={() => {
-                if (endTraining) navigate(`/fiche/${id}`);
-                calculateTime()
-                dispatch(clearTraining());
-                setEndTraining(true);
-              }}
+            <button
+              type="button"
+              onClick={finish}
+              className="neu-btn neu-shape-control neu-focusable py-2 text-sm font-medium text-neutral-600 dark:text-neutral-300"
             >
-              {endTraining ? "Quitter la révision" : "Arrêter"}
-            </Button>
+              Terminer
+            </button>
           </div>
-        </BoxContent>
+        </section>
+      ) : (
+        <>
+          {/* Carte courante (le menu ⋯ est posé par-dessus, hors du bouton) */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={pressCard}
+              className={`neu-raised neu-shape-card neu-focusable flex min-h-64 w-full flex-col items-center justify-center gap-3 p-6 text-center transition-transform active:scale-[0.99] ${
+                isFliped ? "ring-1 ring-primary/30" : ""
+              }`}
+            >
+              <span className="text-xs font-medium uppercase tracking-wide text-neutral-400">
+                {shownFace === "front" ? "Recto" : "Verso"}
+              </span>
+              <span className="whitespace-pre-line break-words text-3xl font-medium text-neutral-800 dark:text-neutral-100">
+                {shownFace === "front" ? currentCard.frontCard : currentCard.backCard}
+              </span>
+              {/* Consigne : « touche » sur téléphone, « clique » sur ordinateur */}
+              <span className="text-xs text-neutral-400 sm:hidden">
+                {isFliped ? "Touche la carte pour passer à la suivante" : "Touche la carte pour la retourner"}
+              </span>
+              <span className="hidden text-xs text-neutral-400 sm:inline">
+                {isFliped ? "Clique sur la carte pour passer à la suivante" : "Clique sur la carte pour la retourner"}
+              </span>
+            </button>
+            <div className="absolute right-3 top-3">
+              <DropdownMenuTrainingCard
+                flashcard={currentCard}
+                onEdited={(card) => dispatch(updateTrainingCard(card))}
+                onDeleted={(id) => dispatch(removeTrainingCard(id))}
+              />
+            </div>
+          </div>
+
+          {/* Seule réponse possible une fois la carte retournée */}
+          {isFliped && (
+            <div className="flex flex-col items-center gap-1.5">
+              <button
+                type="button"
+                onClick={master}
+                className="neu-btn neu-shape-control neu-focusable flex w-full items-center justify-center gap-2 py-3 font-semibold text-success"
+              >
+                <BadgeCheck size={18} />
+                Je maîtrise cette carte
+              </button>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                Elle n'apparaîtra plus dans l'entraînement.
+              </p>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => dispatch(reverseCard())}
+            className="neu-focusable mx-auto flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-neutral-500 hover:text-primary dark:text-neutral-400"
+          >
+            <ArrowLeftRight size={14} />
+            {isReversed ? "Verso → Recto" : "Recto → Verso"}
+          </button>
+        </>
       )}
-    </>
+
+      <ModalConfirm
+        isOpen={isOpenQuit}
+        onOpenChange={onOpenChangeQuit}
+        message="Quitter la révision ? Les cartes marquées « maîtrisées » restent enregistrées, mais le tour en cours sera perdu."
+        confirmLabel="Quitter"
+        onConfirm={quit}
+      />
+    </div>
   );
 }

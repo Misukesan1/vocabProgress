@@ -1,12 +1,11 @@
 import { db } from "./db";
-import { getErrorsFlashcards } from "./flashcard";
 
 /**
  * @typedef {Object} Fiche
  * @property {number} id
  * @property {string} name
  * @property {string} description
- * @property {number} profilId
+ * @property {number} profileId
  */
 
 // * Private methods
@@ -36,7 +35,7 @@ async function validationFiche({ id = null, name, description, profileId }) {
 
   if (description.length > 500) errors.description = "Maximum 500 caractères.";
   if (profileId && !(await db.profile.get(profileId)))
-    errors.profileId = "Profil introuvable.";
+    errors.profileId = "Collection introuvable.";
 
   if (Object.keys(errors).length > 0) throw errors;
 
@@ -139,17 +138,8 @@ export const getFiche = (id) => {
  * @param {number} profileId
  * @returns {Promise<Fiche[]>}
  */
-export const getFichesFromProfile = async (profileId) => {
-  // return db.fiche.where({ profileId: profileId }).toArray();
-  const data = await db.fiche.where({ profileId: profileId }).toArray();
-  const enrichedData = await Promise.all(
-    data.map(async (item) => {
-      const countErrors = await getErrorsFlashcards(item.id);
-      return { ...item, countErrors: countErrors.length };
-    }),
-  );
-
-  return enrichedData;
+export const getFichesFromProfile = (profileId) => {
+  return db.fiche.where({ profileId: profileId }).toArray();
 };
 
 /**

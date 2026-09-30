@@ -1,55 +1,44 @@
-import { Chip, Input } from "@heroui/react";
-import { AlertTriangle, Check, Search } from "lucide-react";
+import { Search } from "lucide-react";
 
+const FILTERS = [
+  { key: "all", label: "Toutes" },
+  { key: "a-reviser", label: "À réviser" },
+  { key: "maitrisees", label: "Maîtrisées" },
+];
 
-export default function FlashcardFilter({searchValue, onSearchValueChange, filter, onFilterChange, flashcards}) {
+/**
+ * Recherche + filtres des cartes d'une fiche (le filtrage est fait dans la page)
+ */
+export default function FlashcardFilter({ searchValue, onSearchValueChange, filter, onFilterChange, counts }) {
   return (
-    <>
-        <Input
+    <div className="flex flex-col gap-3">
+      <label className="neu-pressed neu-shape-control flex items-center gap-2 px-3 py-2 text-neutral-500 focus-within:text-primary dark:text-neutral-400">
+        <Search size={16} />
+        <input
+          type="search"
           value={searchValue}
           onChange={(e) => onSearchValueChange(e.target.value)}
-          startContent={<Search />}
-          size="lg"
-          placeholder="Rechercher parmis les cartes"
-          variant="bordered"
+          placeholder="Rechercher une carte…"
+          className="w-full bg-transparent text-sm text-neutral-800 outline-none placeholder:text-neutral-400 dark:text-neutral-100"
         />
-        <div className="mt-2 flex justify-center gap-2 flex-wrap">
-            <Chip
-                size="sm"
-                variant={filter === "all" ? "shadow" : "bordered"}
-                onClick={() => onFilterChange("all")}
-                color="secondary"
-                className="cursor-pointer"
-                >
-                Toutes
-            </Chip>
+      </label>
 
-            {flashcards?.filter((card) => card.desactive).length > 0 &&
-                <Chip
-                    size="sm"
-                    variant={filter === "maitrisees" ? "shadow" : "bordered"}
-                    onClick={() => onFilterChange("maitrisees")}
-                    color="secondary"
-                    className="cursor-pointer"
-                    endContent={<Check size={18} />}
-                    >
-                    Maîtrisées
-                </Chip>
-            }
-
-            {flashcards?.filter((card) => card.errors > 0).length > 0 &&
-                <Chip
-                    size="sm"
-                    variant={filter === "difficiles" ? "shadow" : "bordered"}
-                    onClick={() => onFilterChange("difficiles")}
-                    color="secondary"
-                    className="cursor-pointer"
-                    endContent={<AlertTriangle size={18} />}
-                    >
-                    A revoir
-                </Chip>
-            }
-        </div>
-    </>
-  )
+      <div className="flex gap-2">
+        {FILTERS.map(({ key, label }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => onFilterChange(key)}
+            className={`neu-shape-control neu-focusable px-3 py-1.5 text-xs font-medium transition-all ${
+              filter === key
+                ? "neu-pressed text-primary"
+                : "neu-btn text-neutral-600 dark:text-neutral-300"
+            }`}
+          >
+            {label} <span className="opacity-60">{counts[key]}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }

@@ -1,36 +1,35 @@
 import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
+  DrawerContent,
+  DrawerHeader,
+  DrawerBody,
+  DrawerFooter,
   Button,
   Input,
   Form,
 } from "@heroui/react";
+import BottomSheet from "./common/BottomSheet";
 import { addProfile, editProfile, getProfile } from "../database/profile";
-import { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
+import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { selectProfile } from "../features/profileSlice";
 import { showAlert } from "../features/alertSlice";
-
-// Modification en cours afficher les caractères restants en temps reel
 
 export default function ModalProfile({
   isOpen, // useDisclosure (heroUi)
   onOpenChange, // useDisclosure (heroUi)
-  profile = null, // objet profile sélectionné (depuis le store)
+  profile = null, // objet collection sélectionnée (depuis le store)
   isNewProfile, // boolean pour savoir si c'est un create ou update à faire
 }) {
 
   const [errorNameMessage, setErrorNameMessage] = useState("");
   const titleModal = !isNewProfile
-  ? "Modifier la collection."
-  : "Créer une nouvelle collection.";
+  ? "Modifier la collection"
+  : "Nouvelle collection";
   const textButtonSubmit = !isNewProfile ? "Modifier" : "Créer";
   const [nameValue, setNameValue] = useState(isNewProfile ? "" : profile?.name || "")
-  
+
   const dispatch = useDispatch();
+  const selectedProfile = useSelector((state) => state.profile.selectedProfile);
 
   // Soumission du formulaire
   async function handleSubmit(e, onClose) {
@@ -52,7 +51,7 @@ export default function ModalProfile({
         await editProfile(profile.id, name);
         const updatedProfile = await getProfile(profile.id)
         dispatch(showAlert({ message: "Collection modifiée.", type: "success" }));
-        dispatch(selectProfile(updatedProfile));
+        if (selectedProfile?.id === profile.id) dispatch(selectProfile(updatedProfile));
         onClose();
       } catch (error) {
         setErrorNameMessage(error.message);
@@ -60,26 +59,18 @@ export default function ModalProfile({
     }
   }
 
-  // Effacer les erreurs lorsque le modal s'ouvre
-  useEffect(() => {
-    setErrorNameMessage("")
-    setNameValue("");
-  }, [isOpen]);
-
   return (
-    <Modal
+    <BottomSheet
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       isDismissable={false}
       isKeyboardDismissDisabled={true}
-      placement="center"
-      backdrop="blur"
     >
-      <ModalContent>
+      <DrawerContent>
         {(onClose) => (
           <Form className="contents" onSubmit={(e) => handleSubmit(e, onClose)}>
-            <ModalHeader>{titleModal}</ModalHeader>
-            <ModalBody>
+            <DrawerHeader>{titleModal}</DrawerHeader>
+            <DrawerBody>
               <Input
                 label="Nom de la collection"
                 isInvalid={errorNameMessage.length > 0}
@@ -93,18 +84,18 @@ export default function ModalProfile({
                 onValueChange={setNameValue}
                 maxLength={25}
               />
-            </ModalBody>
-            <ModalFooter>
-              <Button variant="light" color="danger" onPress={onClose}>
-                Retour
+            </DrawerBody>
+            <DrawerFooter>
+              <Button variant="light" onPress={onClose}>
+                Annuler
               </Button>
               <Button color="primary" type="submit">
                 {textButtonSubmit}
               </Button>
-            </ModalFooter>
+            </DrawerFooter>
           </Form>
         )}
-      </ModalContent>
-    </Modal>
+      </DrawerContent>
+    </BottomSheet>
   );
 }
