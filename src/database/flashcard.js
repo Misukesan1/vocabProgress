@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { normalizeSearch, searchFlashcards } from "../utils/search";
 
 /**
  * @typedef {Object} Flashcard
@@ -190,22 +191,14 @@ export const searchFlashcardsInProfile = async (profileId, searchText) => {
 }
 
 /**
- * Normalise un texte pour la recherche : minuscules, sans accents
- * @param {string} text
- * @returns {string}
- */
-const normalizeSearch = (text) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
-
-/**
  * Recherche façon dictionnaire parmi toutes les cartes de toutes les collections :
  * recto ou verso contenant le texte (insensible à la casse et aux accents).
  * Tri : correspondance exacte, puis début de mot, puis contenu, puis ordre alphabétique.
  * @param {string} searchText
- * @returns {Promise<(Flashcard & {ficheName: string, profileName: string})[]>}
+ * @returns {Promise<(Flashcard & {ficheName: string, profileName: string, rank: number})[]>}
  */
 export const searchAllFlashcards = async (searchText) => {
-    const text = normalizeSearch(searchText)
-    if (!text) return []
+    if (!normalizeSearch(searchText)) return []
 
     const [profiles, fiches, flashcards] = await Promise.all([
         db.profile.toArray(),
@@ -215,27 +208,12 @@ export const searchAllFlashcards = async (searchText) => {
     const profileNamesById = Object.fromEntries(profiles.map((profile) => [profile.id, profile.name]))
     const fichesById = Object.fromEntries(fiches.map((fiche) => [fiche.id, fiche]))
 
-    // 0 = exacte, 1 = commence par, 2 = contient ; null = pas de correspondance
-    const rank = (value) => {
-        const normalized = normalizeSearch(value)
-        if (normalized === text) return 0
-        if (normalized.startsWith(text)) return 1
-        if (normalized.includes(text)) return 2
-        return null
-    }
-
-    return flashcards
-        .map((flashcard) => {
-            const ranks = [rank(flashcard.frontCard), rank(flashcard.backCard)].filter((r) => r !== null)
-            if (ranks.length === 0) return null
-            const fiche = fichesById[flashcard.ficheId]
-            return {
-                ...flashcard,
-                ficheName: fiche?.name ?? '',
-                profileName: profileNamesById[fiche?.profileId] ?? '',
-                rank: Math.min(...ranks),
-            }
-        })
-        .filter(Boolean)
-        .sort((a, b) => a.rank - b.rank || a.frontCard.localeCompare(b.frontCard, 'fr'))
+    return searchFlashcards(flashcards, searchText).map((flashcard) => {
+        const fiche = fichesById[flashcard.ficheId]
+        return {
+            ...flashcard,
+            ficheName: fiche?.name ?? '',
+            profileName: profileNamesById[fiche?.profileId] ?? '',
+        }
+    })
 }

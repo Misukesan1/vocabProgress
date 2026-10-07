@@ -28,7 +28,6 @@ export default function FicheDetails() {
   const fiche = useLiveQuery(async () => (await getFiche(ficheId)) ?? null, [ficheId]);
   const flashcards = useLiveQuery(() => getFlashcardsFromFiche(ficheId), [ficheId]);
 
-  const [searchValue, setSearchValue] = useState("");
   const [filterValue, setFilterValue] = useState("all");
   const [editedFlashcard, setEditedFlashcard] = useState(null);
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
@@ -51,19 +50,11 @@ export default function FicheDetails() {
   const masteredCards = flashcards.filter((card) => card.desactive);
   const counts = { all: flashcards.length, "a-reviser": activeCards.length, maitrisees: masteredCards.length };
 
-  const search = searchValue.trim().toLowerCase();
-  const filteredFlashcards = flashcards
-    .filter((card) => {
-      if (filterValue === "a-reviser") return !card.desactive;
-      if (filterValue === "maitrisees") return card.desactive;
-      return true;
-    })
-    .filter(
-      (card) =>
-        !search ||
-        card.frontCard.toLowerCase().includes(search) ||
-        card.backCard.toLowerCase().includes(search),
-    );
+  const filteredFlashcards = flashcards.filter((card) => {
+    if (filterValue === "a-reviser") return !card.desactive;
+    if (filterValue === "maitrisees") return card.desactive;
+    return true;
+  });
 
   const openFlashcardModal = (flashcard) => {
     setEditedFlashcard(flashcard);
@@ -155,8 +146,6 @@ export default function FicheDetails() {
         ) : (
           <>
             <FlashcardFilter
-              searchValue={searchValue}
-              onSearchValueChange={setSearchValue}
               filter={filterValue}
               onFilterChange={setFilterValue}
               counts={counts}

@@ -10,14 +10,20 @@ import {
 import BottomSheet from "./common/BottomSheet";
 import { useRef, useState } from "react";
 import { useDispatch } from "react-redux";
-import { addFlashcard, deleteFlashcard, editFlashcard, getFlashcard } from "../database/flashcard";
+import { useLiveQuery } from "dexie-react-hooks";
+import { addFlashcard, deleteFlashcard, editFlashcard, getFlashcard, getFlashcardsFromFiche } from "../database/flashcard";
+import { searchFlashcards } from "../utils/search";
 import { showAlert } from "../features/alertSlice";
 import ModalConfirm from "./common/ModalConfirm";
+
+const MAX_SIMILAR = 5;
 
 /**
  * Création / modification d'une carte.
  * En création, la modale reste ouverte après chaque ajout pour enchaîner la
  * saisie de vocabulaire (Entrée = champ suivant / ajouter, Maj+Entrée = retour à la ligne).
+ * Pendant la saisie, les cartes de la fiche qui correspondent au champ en cours
+ * sont listées (repère visuel contre les doublons, sans blocage).
  * Remonter la modale avec une `key` différente à chaque ouverture pour
  * réinitialiser les champs.
  * `onEdited(carte)` / `onDeleted(id)` (optionnels) préviennent l'appelant après
@@ -29,10 +35,18 @@ export default function ModalFlashcard({ isOpen, onOpenChange, flashcard = null,
   const [backCard, setBackCard] = useState(flashcard?.backCard ?? "");
   const [errors, setErrors] = useState({});
   const [addedCount, setAddedCount] = useState(0);
+  const [activeField, setActiveField] = useState("front");
   const frontRef = useRef(null);
   const backRef = useRef(null);
   const closeRef = useRef(null);
   const dispatch = useDispatch();
+
+  // Cartes de la fiche proches du texte saisi (création uniquement)
+  const ficheFlashcards = useLiveQuery(
+    () => (isNewFlashCard ? getFlashcardsFromFiche(ficheId) : []),
+    [isNewFlashCard, ficheId],
+  );
+  const similarCards = searchFlashcards(ficheFlashcards ?? [], activeField === "back" ? backCard : frontCard);
 
   const {
     isOpen: isOpenConfirmDelete,
@@ -105,6 +119,7 @@ export default function ModalFlashcard({ isOpen, onOpenChange, flashcard = null,
                     setErrors((prev) => ({ ...prev, frontcard: undefined }));
                   }}
                   onKeyDown={(e) => handleKeyDown(e, onClose, "front")}
+                  onFocus={() => setActiveField("front")}
                   isInvalid={!!errors.frontcard}
                   errorMessage={errors.frontcard}
                   maxLength={1000}
@@ -119,10 +134,37 @@ export default function ModalFlashcard({ isOpen, onOpenChange, flashcard = null,
                     setErrors((prev) => ({ ...prev, backcard: undefined }));
                   }}
                   onKeyDown={(e) => handleKeyDown(e, onClose, "back")}
+                  onFocus={() => setActiveField("back")}
                   isInvalid={!!errors.backcard}
                   errorMessage={errors.backcard}
                   maxLength={1000}
                 />
+
+                {similarCards.length > 0 && (
+                  <div className="flex flex-col gap-1.5">
+                    <p className="px-1 text-xs text-neutral-500 dark:text-neutral-400">Déjà dans cette fiche</p>
+                    {similarCards.slice(0, MAX_SIMILAR).map((card) => (
+                      <div
+                        key={card.id}
+                        className={`neu-shape-control grid grid-cols-2 gap-3 px-3 py-2 text-sm ${
+                          card.rank === 0 ? "neu-pressed text-primary" : "neu-raised-sm"
+                        }`}
+                      >
+                        <span className={`break-words font-medium ${card.rank === 0 ? "" : "text-neutral-800 dark:text-neutral-100"}`}>
+                          {card.frontCard}
+                        </span>
+                        <span className={`break-words ${card.rank === 0 ? "" : "text-neutral-600 dark:text-neutral-300"}`}>
+                          {card.backCard}
+                        </span>
+                      </div>
+                    ))}
+                    {similarCards.length > MAX_SIMILAR && (
+                      <p className="px-1 text-xs text-neutral-500 dark:text-neutral-400">
+                        + {similarCards.length - MAX_SIMILAR} autre{similarCards.length - MAX_SIMILAR > 1 ? "s" : ""}
+                      </p>
+                    )}
+                  </div>
+                )}
               </DrawerBody>
               <DrawerFooter>
                 {!isNewFlashCard && (
