@@ -1,15 +1,19 @@
+import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useDisclosure } from "@heroui/react";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { getProfiles } from "../database/profile";
 import { getFichesFromProfile } from "../database/fiche";
 import CollectionCard from "../componnents/CollectionCard";
 import FicheCard from "../componnents/FicheCard";
 import ModalProfile from "../componnents/ModalProfile";
 import ModalFiche from "../componnents/ModalFiche";
+import FlashcardSearchResults from "../componnents/FlashcardSearchResults";
 
 export default function Fiches() {
+  const [searchValue, setSearchValue] = useState("");
+  const isSearching = searchValue.trim().length > 0;
   const selectedProfile = useSelector((state) => state.profile.selectedProfile);
   const collections = useLiveQuery(() => getProfiles());
   const fiches = useLiveQuery(
@@ -31,35 +35,50 @@ export default function Fiches() {
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between px-1">
-          <h2 className="text-base font-semibold text-neutral-700 dark:text-neutral-200">
-            Collections
-          </h2>
-          <button
-            type="button"
-            onClick={onOpenNewCollection}
-            className="neu-btn neu-shape-control neu-focusable flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-primary"
-          >
-            <Plus size={14} />
-            Nouvelle
-          </button>
-        </div>
+      <label className="neu-pressed neu-shape-control flex items-center gap-2 px-3 py-2 text-neutral-500 focus-within:text-primary dark:text-neutral-400">
+        <Search size={16} />
+        <input
+          type="search"
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          placeholder="Rechercher parmi les cartes…"
+          className="w-full bg-transparent text-sm text-neutral-800 outline-none placeholder:text-neutral-400 dark:text-neutral-100"
+        />
+      </label>
 
-        {collections?.length === 0 && (
-          <div className="neu-raised neu-shape-card p-6 text-center text-neutral-600 dark:text-neutral-300">
-            Aucune collection pour l'instant. Organise ton vocabulaire en collections, puis en fiches de cartes à réviser : crée ta première collection pour commencer.
+      {isSearching && <FlashcardSearchResults searchValue={searchValue} />}
+
+      {!isSearching && (
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-base font-semibold text-neutral-700 dark:text-neutral-200">
+              Collections
+            </h2>
+            <button
+              type="button"
+              onClick={onOpenNewCollection}
+              className="neu-btn neu-shape-control neu-focusable flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-primary"
+            >
+              <Plus size={14} />
+              Nouvelle
+            </button>
           </div>
-        )}
 
-        <div className="flex flex-col gap-2">
-          {collections?.map((collection) => (
-            <CollectionCard key={collection.id} collection={collection} />
-          ))}
-        </div>
-      </section>
+          {collections?.length === 0 && (
+            <div className="neu-raised neu-shape-card p-6 text-center text-neutral-600 dark:text-neutral-300">
+              Aucune collection pour l'instant. Organise ton vocabulaire en collections, puis en fiches de cartes à réviser : crée ta première collection pour commencer.
+            </div>
+          )}
 
-      {selectedProfile && (
+          <div className="flex flex-col gap-2">
+            {collections?.map((collection) => (
+              <CollectionCard key={collection.id} collection={collection} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!isSearching && selectedProfile && (
         <section className="flex flex-col gap-3">
           <div className="flex items-center justify-between px-1">
             <h2 className="text-base font-semibold text-neutral-700 dark:text-neutral-200">

@@ -41,7 +41,7 @@ Defined in [src/router/router.jsx](src/router/router.jsx). Hash-based because th
 | Path | Page |
 |---|---|
 | `/` | Accueil (dashboard): "Reprendre" / "Réviser" hero card, collections ribbon (`CollectionTile`), fiche grid of the selected collection (`FicheTile`) |
-| `/fiches` | Bibliothèque — collections + fiches lists (bottom-nav: Accueil · Entraînement (FAB) · Bibliothèque) |
+| `/fiches` | Bibliothèque — global card search (`FlashcardSearchResults`, dictionary-style, read-only) + collections + fiches lists (bottom-nav: Accueil · Entraînement (FAB) · Bibliothèque) |
 | `/entrainement` | Shown by the Entraînement tab when no session and no selected fiche |
 | `/fiche/:id` | Fiche detail (flashcard list) |
 | `/fiche/:id/training` | Training session |
