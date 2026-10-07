@@ -6,6 +6,7 @@ import { ChartBar, ChevronRight, Play, Plus } from "lucide-react";
 import { getProfiles } from "../database/profile";
 import { getFiche, getFichesFromProfile } from "../database/fiche";
 import { getFicheProgress } from "../database/flashcard";
+import { trainingPath } from "../features/trainingSlice";
 import CollectionTile from "../componnents/CollectionTile";
 import FicheTile from "../componnents/FicheTile";
 import ModalProfile from "../componnents/ModalProfile";
@@ -167,9 +168,9 @@ function ResumeCard({ training, trainingFiche, selectedProfile, selectedFiche, s
       <HeroButton
         label="Reprendre"
         title={trainingFiche.name}
-        detail={`Tour ${training.tours + 1} · carte ${Math.min(position + 1, total)} sur ${total}`}
+        detail={`${training.mode === "quiz" ? "QCM · " : ""}Tour ${training.tours + 1} · carte ${Math.min(position + 1, total)} sur ${total}`}
         progress={total ? position / total : 0}
-        onClick={() => navigate(`/fiche/${training.ficheId}/training`)}
+        onClick={() => navigate(trainingPath(training.ficheId, training.mode))}
       />
     );
   }

@@ -3,12 +3,14 @@ import { useNavigate, useParams } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useDisclosure } from "@heroui/react";
-import { ArrowLeft, Play, Plus } from "lucide-react";
+import { ArrowLeft, ListChecks, Play, Plus } from "lucide-react";
 import { getFiche } from "../database/fiche";
 import { getProfile } from "../database/profile";
 import { getFlashcardsFromFiche } from "../database/flashcard";
 import { selectProfile } from "../features/profileSlice";
 import { selectFiche } from "../features/ficheSlice";
+import { trainingPath } from "../features/trainingSlice";
+import { QUIZ_MIN_CARDS } from "../utils/training";
 import PageStub from "../componnents/common/PageStub";
 import DropdownMenuFiche from "../componnents/DropdownMenuFiche";
 import FlashcardFilter from "../componnents/FlashcardFilter";
@@ -23,6 +25,7 @@ export default function FicheDetails() {
   const selectedProfile = useSelector((state) => state.profile.selectedProfile);
   // Session non quittée sur cette fiche : le bouton la reprend (progression gardée)
   const hasSessionInProgress = useSelector((state) => state.training.ficheId === ficheId);
+  const trainingMode = useSelector((state) => state.training.mode);
 
   // null = fiche introuvable, undefined = chargement
   const fiche = useLiveQuery(async () => (await getFiche(ficheId)) ?? null, [ficheId]);
@@ -97,18 +100,51 @@ export default function FicheDetails() {
           </div>
         </div>
 
-        {activeCards.length > 0 ? (
+        {activeCards.length > 0 && hasSessionInProgress && (
           <button
             type="button"
-            onClick={() => navigate(`/fiche/${ficheId}/training`)}
+            onClick={() => navigate(trainingPath(ficheId, trainingMode))}
             className="neu-btn neu-shape-control neu-focusable flex items-center justify-center gap-2 py-3 font-semibold text-primary"
           >
             <Play size={18} />
-            {hasSessionInProgress
-              ? "Reprendre la révision en cours"
-              : `Réviser ${activeCards.length} carte${activeCards.length > 1 ? "s" : ""}`}
+            Reprendre la révision en cours{trainingMode === "quiz" ? " (QCM)" : ""}
           </button>
-        ) : (
+        )}
+
+        {/* Lancer une révision : cartes à retourner, ou QCM (assez de cartes pour 6 réponses) */}
+        {activeCards.length > 0 && !hasSessionInProgress && (
+          <div className="flex flex-col gap-2">
+            <p className="text-center text-xs text-neutral-500 dark:text-neutral-400">
+              Réviser {activeCards.length} carte{activeCards.length > 1 ? "s" : ""}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => navigate(trainingPath(ficheId, "cards"))}
+                className="neu-btn neu-shape-control neu-focusable flex items-center justify-center gap-2 py-3 font-semibold text-primary"
+              >
+                <Play size={18} />
+                Cartes
+              </button>
+              <button
+                type="button"
+                disabled={flashcards.length < QUIZ_MIN_CARDS}
+                onClick={() => navigate(trainingPath(ficheId, "quiz"))}
+                className="neu-btn neu-shape-control neu-focusable flex items-center justify-center gap-2 py-3 font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ListChecks size={18} />
+                QCM
+              </button>
+            </div>
+            {flashcards.length < QUIZ_MIN_CARDS && (
+              <p className="text-center text-xs text-neutral-500 dark:text-neutral-400">
+                QCM disponible à partir de {QUIZ_MIN_CARDS} cartes dans la fiche.
+              </p>
+            )}
+          </div>
+        )}
+
+        {activeCards.length === 0 && (
           <p className="text-center text-sm text-neutral-500 dark:text-neutral-400">
             {flashcards.length === 0
               ? "Ajoute des cartes pour pouvoir réviser cette fiche."

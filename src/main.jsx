@@ -8,6 +8,13 @@ import router from "./router/router.jsx";
 import store from "./store.js";
 import "./index.css";
 
+// Mode dev uniquement : données de test lançables depuis la console (seedKanji())
+if (import.meta.env.DEV) {
+  import("./tests/seedKanji.js").then(({ seedKanji }) => {
+    window.seedKanji = seedKanji;
+  });
+}
+
 createRoot(document.getElementById("root")).render(
   <HeroUIProvider>
     <NextThemesProvider attribute="class" defaultTheme="light">

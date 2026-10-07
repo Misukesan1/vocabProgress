@@ -31,7 +31,7 @@ Four slices in [src/features/](src/features/):
 |---|---|
 | `profileSlice` | Currently selected collection (persisted in localStorage, resynced with the DB in `Layout`) |
 | `ficheSlice` | Currently selected fiche, always inside the selected collection (same persistence/resync; cleared when switching collection). The bottom-nav "Entraînement" tab resumes an unquit session, else opens this fiche, else asks to pick one |
-| `trainingSlice` | Full training session state (cards, progress, flip/reversed state, rounds) |
+| `trainingSlice` | Full training session state (cards, progress, flip/reversed state, rounds, `mode` "cards"/"quiz" + current QCM question). `trainingPath(ficheId, mode)` gives the session route |
 | `alertSlice` | Temporary notifications, rendered by `common/AlertToast` in `Layout` (auto-dismiss after 3 s) |
 
 ### Routing (React Router, hash-based)
@@ -44,7 +44,8 @@ Defined in [src/router/router.jsx](src/router/router.jsx). Hash-based because th
 | `/fiches` | Bibliothèque — global card search (`FlashcardSearchResults`, dictionary-style, read-only) + collections + fiches lists (bottom-nav: Accueil · Entraînement (FAB) · Bibliothèque) |
 | `/entrainement` | Shown by the Entraînement tab when no session and no selected fiche |
 | `/fiche/:id` | Fiche detail (flashcard list) |
-| `/fiche/:id/training` | Training session |
+| `/fiche/:id/training` | Training session (cards mode) |
+| `/fiche/:id/qcm` | Training session (QCM mode, `TrainingQuiz`) |
 | `/progres` | Progress (stub) |
 | `/options` | Options — data backup (export / restore JSON), reached via the ⚙ icon in the header |
 
@@ -53,6 +54,7 @@ Defined in [src/router/router.jsx](src/router/router.jsx). Hash-based because th
 1. Training uses every non-mastered card of the fiche, shuffled.
 2. Tap the card to flip it; tap again to go to the next card. Once flipped, the only action is *Je maîtrise cette carte*, which sets `desactive = true` and moves on.
 3. After all cards, user can start another round with remaining non-mastered cards.
+4. QCM mode (fiche needs ≥ 7 cards): one card's face + 6 answers from the other face (the right one + 5 distractors from the **same fiche only**, mastered included, never with the same answer text — `buildQuizChoices` in `src/utils/training.js`). After answering, every answer flips to show both faces: right one ringed green, wrong pick red. Same rounds / "Je maîtrise" / recto↔verso as cards mode. Shared UI: `TrainingHeader`, `TrainingRoundOver`.
 
 ### List UI Pattern (Collections / Fiches / Flashcards)
 

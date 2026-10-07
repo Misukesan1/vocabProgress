@@ -1,5 +1,6 @@
 import { NavLink, useLocation, useNavigate } from "react-router";
 import { useSelector } from "react-redux";
+import { trainingPath } from "../../features/trainingSlice";
 import { Dumbbell, House, Library } from "lucide-react";
 
 const linkClass = ({ isActive }) =>
@@ -25,9 +26,11 @@ const trainingLinkClass = (isActive) =>
 export default function BottomNav() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  // L'onglet reste actif pendant une révision (/fiche/:id/training)
-  const isTrainingActive = pathname === "/entrainement" || pathname.endsWith("/training");
+  // L'onglet reste actif pendant une révision (/fiche/:id/training ou /fiche/:id/qcm)
+  const isTrainingActive =
+    pathname === "/entrainement" || pathname.endsWith("/training") || pathname.endsWith("/qcm");
   const trainingFicheId = useSelector((state) => state.training.ficheId);
+  const trainingMode = useSelector((state) => state.training.mode);
   const selectedFicheId = useSelector((state) => state.fiche.selectedFiche?.id);
 
   // Session en cours (non quittée) : on la reprend là où elle en était.
@@ -36,7 +39,7 @@ export default function BottomNav() {
   // Sans fiche sélectionnée, la page Entraînement invite à en choisir une.
   const handleTrainingClick = (event) => {
     event.preventDefault();
-    if (trainingFicheId) navigate(`/fiche/${trainingFicheId}/training`);
+    if (trainingFicheId) navigate(trainingPath(trainingFicheId, trainingMode));
     else if (selectedFicheId) navigate(`/fiche/${selectedFicheId}`);
     else navigate("/entrainement");
   };

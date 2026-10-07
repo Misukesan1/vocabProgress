@@ -6,6 +6,7 @@ import Progress from "../pages/Progress";
 import Settings from "../pages/Settings";
 import FicheDetails from "../pages/FicheDetails";
 import Training from "../pages/Training";
+import TrainingQuiz from "../pages/TrainingQuiz";
 import Entrainement from "../pages/Entrainement";
 
 const router = createHashRouter([
@@ -28,6 +29,10 @@ const router = createHashRouter([
       {
         path: "/fiche/:id/training",
         element: <Training />
+      },
+      {
+        path: "/fiche/:id/qcm",
+        element: <TrainingQuiz />
       },
       {
         path: "/entrainement",
