@@ -28,6 +28,41 @@ body {
   transition: background-color 200ms ease;
 }
 
+/* Curseur « main » sur tout ce qui se clique. Tailwind v4 remet le curseur par défaut
+   sur les boutons : cette règle de base le rétablit partout (boutons, liens, éléments
+   HeroUI : menus, options, onglets...), y compris pour les futurs composants.
+   Désactivé = « interdit ». Une classe utilitaire (cursor-*) reste prioritaire. */
+@layer base {
+  button,
+  a[href],
+  summary,
+  select,
+  label[for],
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="file"],
+  input[type="submit"],
+  input[type="button"],
+  [role="button"],
+  [role="link"],
+  [role="menuitem"],
+  [role="option"],
+  [role="tab"],
+  [role="switch"],
+  [role="checkbox"],
+  [role="radio"] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  select:disabled,
+  input:disabled,
+  [aria-disabled="true"],
+  [data-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
+
 @layer components {
   /* Surface de contenu principale (carte de fiche, carte de flashcard...) :
      relief large et diffus, légèrement asymétrique et teinté pour éviter
@@ -118,12 +153,12 @@ body {
     border-radius: 0.875rem;
   }
 }
-/* QCM : les réponses se retournent une fois la réponse donnée */
-.quiz-flip {
-  animation: quiz-flip 0.35s ease-out;
+/* Carte qui se retourne (réponses du QCM, carte de démo de l'accueil) */
+.flip-in {
+  animation: flip-in 0.35s ease-out;
 }
 
-@keyframes quiz-flip {
+@keyframes flip-in {
   from {
     transform: perspective(600px) rotateY(90deg);
   }
@@ -133,7 +168,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .quiz-flip {
+  .flip-in {
     animation: none;
   }
 }

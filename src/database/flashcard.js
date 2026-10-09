@@ -217,3 +217,11 @@ export const searchAllFlashcards = async (searchText) => {
         }
     })
 }
+
+/**
+ * Nombre total de cartes, toutes collections confondues
+ * @returns {Promise<number>}
+ */
+export const countAllFlashcards = () => {
+    return db.flashcard.count()
+}

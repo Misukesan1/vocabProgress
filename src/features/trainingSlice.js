@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { getLastTraining } from "../utils/lastTraining";
 
 /**
  * Gestion de l'entrainement d'une fiche
@@ -6,6 +7,9 @@ import { createSlice } from "@reduxjs/toolkit";
  * En QCM, `quizCardId` / `quizChoiceIds` décrivent la question affichée (régénérée
  * quand la carte courante change), `quizAnswerId` la réponse choisie (null = pas encore
  * répondu) et `quizCorrect` le nombre de bonnes réponses du tour.
+ * `roundElapsedMs` / `sessionElapsedMs` : temps de révision effectif (pauses exclues) du
+ * tour et de la session ; `roundRecorded` : tour fini déjà ajouté aux statistiques de la fiche.
+ * La session est restaurée depuis localStorage au démarrage (sauvegardée dans store.js).
  */
 
 const initialQuiz = {
@@ -14,23 +18,31 @@ const initialQuiz = {
   quizAnswerId: null,
 };
 
+const initialSession = () => ({
+  flashcards: [],
+  isReversed: false,
+  isFliped: false,
+  tours: 0,
+  deselectWords: 0,
+  totalDeselectWords: 0,
+  currentIndex: 0,
+  ficheId: null,
+  mode: "cards",
+  ...initialQuiz,
+  quizCorrect: 0,
+  roundElapsedMs: 0,
+  sessionElapsedMs: 0,
+  roundRecorded: false,
+});
+
 /** Route de la session selon son mode */
 export const trainingPath = (ficheId, mode) => `/fiche/${ficheId}/${mode === "quiz" ? "qcm" : "training"}`;
 
 export const trainingSlice = createSlice({
   name: "training",
   initialState: {
-    flashcards: [],
-    isReversed: false,
-    isFliped: false,
-    tours: 0,
-    deselectWords: 0,
-    totalDeselectWords: 0,
-    currentIndex: 0,
-    ficheId: null,
-    mode: "cards",
-    ...initialQuiz,
-    quizCorrect: 0,
+    ...initialSession(),
+    ...getLastTraining(),
   },
   reducers: {
     // Démarre une nouvelle session (remplace toute session en cours)
@@ -47,6 +59,9 @@ export const trainingSlice = createSlice({
       state.deselectWords = 0;
       state.totalDeselectWords = 0;
       state.currentIndex = 0;
+      state.roundElapsedMs = 0;
+      state.sessionElapsedMs = 0;
+      state.roundRecorded = false;
     },
     setFlashcards: (state, action) => {
       state.flashcards = action.payload;
@@ -62,19 +77,7 @@ export const trainingSlice = createSlice({
       // QCM : les réponses changent de face, la question est régénérée
       Object.assign(state, initialQuiz);
     },
-    clearTraining: (state) => {
-      state.flashcards = [];
-      state.isReversed = false;
-      state.isFliped = false;
-      state.tours = 0;
-      state.deselectWords = 0;
-      state.totalDeselectWords = 0;
-      state.currentIndex = 0;
-      state.ficheId = null;
-      state.mode = "cards";
-      Object.assign(state, initialQuiz);
-      state.quizCorrect = 0;
-    },
+    clearTraining: () => initialSession(),
     nextRoundTraining: (state, action) => {
       state.flashcards = action.payload;
       state.isReversed = false;
@@ -84,6 +87,16 @@ export const trainingSlice = createSlice({
       state.deselectWords = 0;
       Object.assign(state, initialQuiz);
       state.quizCorrect = 0;
+      state.roundElapsedMs = 0;
+      state.roundRecorded = false;
+    },
+    // Temps de révision écoulé (voir useTrainingTime)
+    addElapsed: (state, action) => {
+      state.roundElapsedMs += action.payload;
+      state.sessionElapsedMs += action.payload;
+    },
+    markRoundRecorded: (state) => {
+      state.roundRecorded = true;
     },
     // Carte modifiée pendant la session : on remplace sa copie
     updateTrainingCard: (state, action) => {
@@ -133,6 +146,8 @@ export const {
   removeTrainingCard,
   setQuizQuestion,
   answerQuiz,
+  addElapsed,
+  markRoundRecorded,
 } = trainingSlice.actions;
 
 export default trainingSlice.reducer;

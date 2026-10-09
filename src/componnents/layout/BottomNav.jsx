@@ -1,5 +1,6 @@
 import { NavLink, useLocation, useNavigate } from "react-router";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { showAlert } from "../../features/alertSlice";
 import { trainingPath } from "../../features/trainingSlice";
 import { Dumbbell, House, Library } from "lucide-react";
 
@@ -23,8 +24,9 @@ const trainingLinkClass = (isActive) =>
       : "text-neutral-500 hover:text-primary/80 dark:text-neutral-400 dark:hover:text-primary/80"
   }`;
 
-export default function BottomNav() {
+export default function BottomNav({ locked = false }) {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { pathname } = useLocation();
   // L'onglet reste actif pendant une révision (/fiche/:id/training ou /fiche/:id/qcm)
   const isTrainingActive =
@@ -39,14 +41,26 @@ export default function BottomNav() {
   // Sans fiche sélectionnée, la page Entraînement invite à en choisir une.
   const handleTrainingClick = (event) => {
     event.preventDefault();
-    if (trainingFicheId) navigate(trainingPath(trainingFicheId, trainingMode));
-    else if (selectedFicheId) navigate(`/fiche/${selectedFicheId}`);
-    else navigate("/entrainement");
+    const target = trainingFicheId
+      ? trainingPath(trainingFicheId, trainingMode)
+      : selectedFicheId
+        ? `/fiche/${selectedFicheId}`
+        : "/entrainement";
+    if (target !== pathname) {
+      navigate(target);
+      return;
+    }
+    // Déjà sur la page visée : on le dit plutôt que de ne rien faire
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (target.startsWith("/fiche/")) {
+      dispatch(showAlert({ message: "Lance la révision avec « Cartes » ou « QCM », en haut de la fiche.", type: "success" }));
+    }
   };
 
   return (
-    <nav className="neu-bar-bottom fixed inset-x-0 bottom-0 z-20 px-4 py-3">
-      <div className="mx-auto flex w-full max-w-md items-center justify-around">
+    <nav className="neu-bar-bottom fixed inset-x-0 bottom-0 z-20 px-4 py-3" inert={locked}>
+      {/* Verrouillée pendant le tutoriel : visible mais grisée et inerte */}
+      <div className={`mx-auto flex w-full max-w-md items-center justify-around transition-opacity ${locked ? "opacity-40" : ""}`}>
         <NavLink to="/" end className={linkClass}>
           <House size={20} />
           Accueil
@@ -68,6 +82,11 @@ export default function BottomNav() {
           Bibliothèque
         </NavLink>
       </div>
+      {locked && (
+        <p className="mt-1 text-center text-[11px] text-neutral-500 dark:text-neutral-400">
+          Menus disponibles à la fin de ta première révision
+        </p>
+      )}
     </nav>
   );
 }

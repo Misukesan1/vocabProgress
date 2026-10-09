@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -20,6 +20,8 @@ import {
 import PageStub from "../componnents/common/PageStub";
 import ModalConfirm from "../componnents/common/ModalConfirm";
 import { showAlert } from "../features/alertSlice";
+import { isTutorialPending } from "../utils/onboarding";
+import { useTrainingTime } from "../utils/useTrainingTime";
 import DropdownMenuTrainingCard from "../componnents/DropdownMenuTrainingCard";
 import TrainingHeader from "../componnents/TrainingHeader";
 import TrainingRoundOver from "../componnents/TrainingRoundOver";
@@ -39,7 +41,11 @@ export default function Training() {
   const fiche = useLiveQuery(async () => (await getFiche(ficheId)) ?? null, [ficheId]);
   const remainingCards = useLiveQuery(() => getSelectedFlashcards(ficheId), [ficheId]);
 
-  const [sessionStart] = useState(() => Date.now());
+  // Temps de révision (hors pauses) et statistiques de la fiche à la fin de chaque tour
+  const isRoundRunning = isSessionReady && !!fiche && !!currentCard;
+  const isRoundFinished = isSessionReady && !!fiche && flashcards.length > 0 && !currentCard;
+  useTrainingTime(ficheId, isRoundRunning, isRoundFinished);
+
   const quittingRef = useRef(false);
   const busyRef = useRef(false);
 
@@ -55,18 +61,31 @@ export default function Training() {
 
   const quit = () => {
     quittingRef.current = true;
-    navigate(`/fiche/${ficheId}`);
+    // Première révision du tutoriel terminée : on finit par le récap
+    navigate(isTutorialPending() ? "/premiers-pas/fin" : `/fiche/${ficheId}`);
     dispatch(clearTraining());
   };
 
   // Quitter en plein tour demande confirmation (la position dans le tour est perdue)
   const { isOpen: isOpenQuit, onOpen: onOpenQuit, onOpenChange: onOpenChangeQuit } = useDisclosure();
   const requestQuit = () => {
-    if (currentCard && currentIndex > 0) onOpenQuit();
+    // Première révision du tutoriel : quitter = pause. La séance est gardée et
+    // l'accueil (toujours verrouillé) propose de la reprendre.
+    if (isTutorialPending()) {
+      navigate("/");
+      return;
+    }
+    // Même règle en cartes et en QCM : confirmation tant qu'un tour est en cours
+    if (currentCard) onOpenQuit();
     else quit();
   };
 
   const finish = () => {
+    // Première révision du tutoriel : pas de notification, elle masquerait le récap
+    if (isTutorialPending()) {
+      quit();
+      return;
+    }
     const plural = totalDeselectWords > 1 ? "s" : "";
     dispatch(
       showAlert({
@@ -142,6 +161,7 @@ export default function Training() {
         currentIndex={currentIndex}
         total={flashcards.length}
         onQuit={requestQuit}
+        isPause={isTutorialPending()}
       />
 
       {isRoundOver ? (
@@ -151,8 +171,11 @@ export default function Training() {
           deselectWords={deselectWords}
           totalDeselectWords={totalDeselectWords}
           roundSize={flashcards.length}
-          sessionStart={sessionStart}
-          onNextRound={startNextRound}
+          roundDuration={training.roundElapsedMs}
+          sessionDuration={training.sessionElapsedMs}
+          // Première révision du tutoriel : un seul tour, puis le récap
+          onNextRound={isTutorialPending() ? undefined : startNextRound}
+          finishHint={isTutorialPending() ? "Un dernier écran pour te présenter l'appli, puis c'est à toi." : undefined}
           onFinish={finish}
         />
       ) : (
@@ -220,7 +243,7 @@ export default function Training() {
       <ModalConfirm
         isOpen={isOpenQuit}
         onOpenChange={onOpenChangeQuit}
-        message="Quitter la révision ? Les cartes marquées « maîtrisées » restent enregistrées, mais le tour en cours sera perdu."
+        message="Quitter la révision ? Les cartes marquées « maîtrisées » restent enregistrées, mais ta progression dans ce tour sera perdue."
         confirmLabel="Quitter"
         onConfirm={quit}
       />

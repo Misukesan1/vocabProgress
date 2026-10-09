@@ -33,6 +33,7 @@ export const exportBackup = async () => {
 
 const isId = (value) => Number.isInteger(value) && value > 0;
 const isText = (value) => typeof value === "string";
+const toCount = (value) => (Number.isFinite(value) && value > 0 ? Math.floor(value) : 0);
 
 /**
  * Vérifie qu'un objet est une sauvegarde valide et cohérente, et la normalise
@@ -59,7 +60,15 @@ export const validateBackup = (data) => {
     if (!isId(f?.id) || !isText(f.name) || !profileIds.has(f.profileId)) {
       throw new Error("Sauvegarde invalide : fiche mal formée ou sans collection.");
     }
-    return { id: f.id, name: f.name, description: isText(f.description) ? f.description : "", profileId: f.profileId };
+    // reviewRounds / reviewTimeMs : statistiques de révision, 0 pour les anciennes sauvegardes
+    return {
+      id: f.id,
+      name: f.name,
+      description: isText(f.description) ? f.description : "",
+      profileId: f.profileId,
+      reviewRounds: toCount(f.reviewRounds),
+      reviewTimeMs: toCount(f.reviewTimeMs),
+    };
   });
   const ficheIds = new Set(fiches.map((f) => f.id));
 
@@ -87,5 +96,16 @@ export const restoreBackup = (backup) => {
     await db.profile.bulkAdd(backup.profiles);
     await db.fiche.bulkAdd(backup.fiches);
     await db.flashcard.bulkAdd(backup.flashcards);
+  });
+};
+
+/**
+ * Supprime TOUTES les données (collections, fiches, cartes).
+ * Transaction unique : en cas d'erreur, rien n'est modifié.
+ * @returns {Promise<void>}
+ */
+export const clearAllData = () => {
+  return db.transaction("rw", db.profile, db.fiche, db.flashcard, async () => {
+    await Promise.all([db.flashcard.clear(), db.fiche.clear(), db.profile.clear()]);
   });
 };

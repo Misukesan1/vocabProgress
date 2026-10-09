@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { CircleAlert, CircleCheck, X } from "lucide-react";
 import { hideAlert } from "../../features/alertSlice";
+import { runUndo } from "../../utils/undo";
 
 const DURATION_MS = 3000;
 
@@ -11,15 +12,16 @@ const DURATION_MS = 3000;
  */
 export default function AlertToast() {
   const dispatch = useDispatch();
-  const { message, type, isVisible } = useSelector((state) => state.alert);
+  const { message, type, isVisible, long, undoable } = useSelector((state) => state.alert);
   const isError = type === "danger";
+  const duration = isError || long || undoable ? DURATION_MS * 2 : DURATION_MS;
 
   // Relancé à chaque nouveau message, même identique au précédent
   useEffect(() => {
     if (!isVisible) return;
-    const timer = setTimeout(() => dispatch(hideAlert()), isError ? DURATION_MS * 2 : DURATION_MS);
+    const timer = setTimeout(() => dispatch(hideAlert()), duration);
     return () => clearTimeout(timer);
-  }, [isVisible, message, isError, dispatch]);
+  }, [isVisible, message, duration, dispatch]);
 
   if (!isVisible) return null;
 
@@ -33,6 +35,18 @@ export default function AlertToast() {
       >
         {isError ? <CircleAlert size={18} className="shrink-0" /> : <CircleCheck size={18} className="shrink-0" />}
         <span className="text-neutral-700 dark:text-neutral-200">{message}</span>
+        {undoable && (
+          <button
+            type="button"
+            onClick={() => {
+              runUndo();
+              dispatch(hideAlert());
+            }}
+            className="neu-focusable shrink-0 rounded-md px-1 font-semibold text-primary"
+          >
+            Annuler
+          </button>
+        )}
         <button
           type="button"
           onClick={() => dispatch(hideAlert())}

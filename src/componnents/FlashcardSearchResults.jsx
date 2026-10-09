@@ -33,6 +33,7 @@ export default function FlashcardSearchResults({ searchValue }) {
           <p className="px-1 text-xs text-neutral-500 dark:text-neutral-400">
             {results.length} carte{results.length > 1 ? "s" : ""} trouvée{results.length > 1 ? "s" : ""}
             {results.length > MAX_RESULTS && ` — ${MAX_RESULTS} premières affichées`}
+            {" · touche une carte pour la modifier"}
           </p>
 
           <div className="flex flex-col gap-2">

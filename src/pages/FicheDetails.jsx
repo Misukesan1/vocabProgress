@@ -3,18 +3,19 @@ import { useNavigate, useParams } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useDisclosure } from "@heroui/react";
-import { ArrowLeft, ListChecks, Play, Plus } from "lucide-react";
+import { ArrowLeft, Clock, ListChecks, Play, Plus, RotateCw } from "lucide-react";
 import { getFiche } from "../database/fiche";
 import { getProfile } from "../database/profile";
 import { getFlashcardsFromFiche } from "../database/flashcard";
 import { selectProfile } from "../features/profileSlice";
 import { selectFiche } from "../features/ficheSlice";
-import { trainingPath } from "../features/trainingSlice";
-import { QUIZ_MIN_CARDS } from "../utils/training";
+import { clearTraining, trainingPath } from "../features/trainingSlice";
+import { formatTotalDuration, QUIZ_MIN_CARDS } from "../utils/training";
 import PageStub from "../componnents/common/PageStub";
 import DropdownMenuFiche from "../componnents/DropdownMenuFiche";
 import FlashcardFilter from "../componnents/FlashcardFilter";
 import FlashcardRow from "../componnents/FlashcardRow";
+import ModalConfirm from "../componnents/common/ModalConfirm";
 import ModalFlashcard from "../componnents/ModalFlashcard";
 
 export default function FicheDetails() {
@@ -24,8 +25,14 @@ export default function FicheDetails() {
   const dispatch = useDispatch();
   const selectedProfile = useSelector((state) => state.profile.selectedProfile);
   // Session non quittée sur cette fiche : le bouton la reprend (progression gardée)
-  const hasSessionInProgress = useSelector((state) => state.training.ficheId === ficheId);
-  const trainingMode = useSelector((state) => state.training.mode);
+  const training = useSelector((state) => state.training);
+  const hasSessionInProgress = training.ficheId === ficheId;
+  const trainingMode = training.mode;
+  // Session non quittée sur une autre fiche : lancer ici la remplacerait
+  const otherSessionFiche = useLiveQuery(
+    async () => (training.ficheId && training.ficheId !== ficheId ? ((await getFiche(training.ficheId)) ?? null) : null),
+    [training.ficheId, ficheId],
+  );
 
   // null = fiche introuvable, undefined = chargement
   const fiche = useLiveQuery(async () => (await getFiche(ficheId)) ?? null, [ficheId]);
@@ -34,6 +41,8 @@ export default function FicheDetails() {
   const [filterValue, setFilterValue] = useState("all");
   const [editedFlashcard, setEditedFlashcard] = useState(null);
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const [pendingMode, setPendingMode] = useState(null);
+  const { isOpen: isOpenReplace, onOpen: onOpenReplace, onOpenChange: onOpenChangeReplace } = useDisclosure();
 
   // Ouvrir une fiche (lien direct, reprise d'entraînement...) active sa collection
   useEffect(() => {
@@ -58,6 +67,22 @@ export default function FicheDetails() {
     if (filterValue === "maitrisees") return card.desactive;
     return true;
   });
+
+  // Nouvelle révision : si une autre est en cours (ici ou sur une autre fiche), elle serait
+  // remplacée, donc on demande confirmation
+  const launch = (mode) => {
+    if (training.ficheId) {
+      setPendingMode(mode);
+      onOpenReplace();
+    } else navigate(trainingPath(ficheId, mode));
+  };
+
+  const confirmReplace = () => {
+    dispatch(clearTraining());
+    navigate(trainingPath(ficheId, pendingMode));
+  };
+
+  const sessionPosition = `tour ${training.tours + 1} · carte ${Math.min(training.currentIndex + 1, training.flashcards.length)} sur ${training.flashcards.length}`;
 
   const openFlashcardModal = (flashcard) => {
     setEditedFlashcard(flashcard);
@@ -100,27 +125,81 @@ export default function FicheDetails() {
           </div>
         </div>
 
+        {/* Statistiques de révision : tours terminés et temps cumulé (pauses exclues) */}
+        <div className="neu-pressed neu-shape-control grid grid-cols-2 gap-2 px-3 py-2.5 text-center">
+          <div className="flex flex-col items-center gap-0.5">
+            <p className="flex items-center gap-1.5 font-semibold text-neutral-800 dark:text-neutral-100">
+              <RotateCw size={14} className="text-neutral-400" />
+              {fiche.reviewRounds ?? 0}
+            </p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              Révision{(fiche.reviewRounds ?? 0) > 1 ? "s" : ""} terminée{(fiche.reviewRounds ?? 0) > 1 ? "s" : ""}
+            </p>
+          </div>
+          <div className="flex flex-col items-center gap-0.5">
+            <p className="flex items-center gap-1.5 font-semibold text-neutral-800 dark:text-neutral-100">
+              <Clock size={14} className="text-neutral-400" />
+              {formatTotalDuration(fiche.reviewTimeMs)}
+            </p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">Temps de révision</p>
+          </div>
+        </div>
+
         {activeCards.length > 0 && hasSessionInProgress && (
-          <button
-            type="button"
-            onClick={() => navigate(trainingPath(ficheId, trainingMode))}
-            className="neu-btn neu-shape-control neu-focusable flex items-center justify-center gap-2 py-3 font-semibold text-primary"
-          >
-            <Play size={18} />
-            Reprendre la révision en cours{trainingMode === "quiz" ? " (QCM)" : ""}
-          </button>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => navigate(trainingPath(ficheId, trainingMode))}
+              className="neu-btn neu-shape-control neu-focusable flex items-center justify-center gap-2 py-3 font-semibold text-primary"
+            >
+              <Play size={18} />
+              Reprendre la révision en cours{trainingMode === "quiz" ? " (QCM)" : ""}
+            </button>
+            {/* Changer de mode / repartir de zéro : la révision en cours est abandonnée */}
+            <p className="flex flex-wrap items-center justify-center gap-x-1 text-center text-xs text-neutral-500 dark:text-neutral-400">
+              Ou recommencer à zéro :
+              <button
+                type="button"
+                onClick={() => launch("cards")}
+                className="neu-focusable rounded-md px-1 font-medium text-primary"
+              >
+                Cartes
+              </button>
+              ·
+              <button
+                type="button"
+                onClick={() => launch("quiz")}
+                disabled={flashcards.length < QUIZ_MIN_CARDS}
+                className="neu-focusable rounded-md px-1 font-medium text-primary disabled:opacity-40"
+              >
+                QCM
+              </button>
+            </p>
+          </div>
         )}
 
         {/* Lancer une révision : cartes à retourner, ou QCM (assez de cartes pour 6 réponses) */}
         {activeCards.length > 0 && !hasSessionInProgress && (
           <div className="flex flex-col gap-2">
+            {otherSessionFiche && (
+              <p className="flex flex-wrap items-center justify-center gap-x-1 text-center text-xs text-warning-600 dark:text-warning">
+                Révision en cours sur « {otherSessionFiche.name} » ({sessionPosition}).
+                <button
+                  type="button"
+                  onClick={() => navigate(trainingPath(training.ficheId, training.mode))}
+                  className="neu-focusable rounded-md px-1 font-medium text-primary"
+                >
+                  La reprendre
+                </button>
+              </p>
+            )}
             <p className="text-center text-xs text-neutral-500 dark:text-neutral-400">
               Réviser {activeCards.length} carte{activeCards.length > 1 ? "s" : ""}
             </p>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => navigate(trainingPath(ficheId, "cards"))}
+                onClick={() => launch("cards")}
                 className="neu-btn neu-shape-control neu-focusable flex items-center justify-center gap-2 py-3 font-semibold text-primary"
               >
                 <Play size={18} />
@@ -129,7 +208,7 @@ export default function FicheDetails() {
               <button
                 type="button"
                 disabled={flashcards.length < QUIZ_MIN_CARDS}
-                onClick={() => navigate(trainingPath(ficheId, "quiz"))}
+                onClick={() => launch("quiz")}
                 className="neu-btn neu-shape-control neu-focusable flex items-center justify-center gap-2 py-3 font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <ListChecks size={18} />
@@ -163,7 +242,7 @@ export default function FicheDetails() {
             className="neu-btn neu-shape-control neu-focusable flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-primary"
           >
             <Plus size={14} />
-            Nouvelle
+            Nouvelle carte
           </button>
         </div>
 
@@ -197,6 +276,18 @@ export default function FicheDetails() {
           </>
         )}
       </section>
+
+      <ModalConfirm
+        isOpen={isOpenReplace}
+        onOpenChange={onOpenChangeReplace}
+        message={
+          hasSessionInProgress
+            ? `Recommencer à zéro ? Ta révision en cours sur cette fiche (${sessionPosition}) sera perdue. Les cartes déjà maîtrisées le restent.`
+            : `Une révision est en cours sur « ${otherSessionFiche?.name ?? "une autre fiche"} » (${sessionPosition}). La remplacer par une révision de « ${fiche.name} » ? Les cartes déjà maîtrisées le restent.`
+        }
+        confirmLabel={hasSessionInProgress ? "Recommencer" : "Remplacer"}
+        onConfirm={confirmReplace}
+      />
 
       <ModalFlashcard
         key={`flashcard-${editedFlashcard?.id ?? "new"}-${isOpen}`}

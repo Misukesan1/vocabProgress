@@ -34,7 +34,7 @@ export default function CollectionCard({ collection }) {
       >
         <span className="truncate font-medium">{collection.name}</span>
         <span className="shrink-0 text-xs text-neutral-500 dark:text-neutral-400">
-          {fiches?.length ?? 0} fiche{(fiches?.length ?? 0) > 1 ? "s" : ""}
+          {fiches && `${fiches.length} fiche${fiches.length > 1 ? "s" : ""}`}
         </span>
       </button>
       <DropdownMenuCollection collection={collection} fiches={fiches} />

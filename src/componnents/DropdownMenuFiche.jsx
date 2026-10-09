@@ -39,7 +39,13 @@ export default function DropdownMenuFiche({ fiche, flashcards }) {
 
   const handleResetAll = async () => {
     await activeAllFlashcards(fiche.id);
-    dispatch(showAlert({ message: "Toutes les cartes sont à nouveau en révision.", type: "success" }));
+    const plural = masteredCount > 1 ? "s" : "";
+    dispatch(
+      showAlert({
+        message: `${masteredCount} carte${plural} remise${plural} en révision dans « ${fiche.name} ».`,
+        type: "success",
+      }),
+    );
   };
 
   const handleAction = (key) => {
@@ -82,11 +88,9 @@ export default function DropdownMenuFiche({ fiche, flashcards }) {
       <ModalConfirm
         isOpen={isOpenReset}
         onOpenChange={onOpenChangeReset}
-        message={
-          masteredCount > 1
-            ? `Remettre les ${masteredCount} cartes maîtrisées en révision ?`
-            : "Remettre la carte maîtrisée en révision ?"
-        }
+        message={`Remettre en révision ${
+          masteredCount > 1 ? `les ${masteredCount} cartes maîtrisées` : "la seule carte maîtrisée"
+        } de « ${fiche?.name} » ? Toutes ses cartes seront de nouveau à réviser.`}
         confirmLabel="Remettre en révision"
         onConfirm={handleResetAll}
       />

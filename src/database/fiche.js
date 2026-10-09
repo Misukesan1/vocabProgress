@@ -6,6 +6,8 @@ import { db } from "./db";
  * @property {string} name
  * @property {string} description
  * @property {number} profileId
+ * @property {number} [reviewRounds] tours de révision terminés (absent = 0)
+ * @property {number} [reviewTimeMs] temps total passé sur ces tours, en ms (absent = 0)
  */
 
 // * Private methods
@@ -111,6 +113,23 @@ export const editFiche = async (id, name, description, profileId) => {
     return db.fiche.update(id, {
       name: normalizedName,
       description: normalizedDescription,
+    });
+};
+
+/**
+ * Tour de révision terminé : +1 tour et son temps ajoutés aux statistiques de la fiche.
+ * Champs non indexés : aucune migration, les fiches existantes partent de 0.
+ * @param {number} id
+ * @param {number} elapsedMs
+ * @returns {Promise<number>}
+ */
+export const addFicheReview = (id, elapsedMs) => {
+  return db.fiche
+    .where("id")
+    .equals(id)
+    .modify((fiche) => {
+      fiche.reviewRounds = (fiche.reviewRounds ?? 0) + 1;
+      fiche.reviewTimeMs = (fiche.reviewTimeMs ?? 0) + Math.max(0, Math.round(elapsedMs));
     });
 };
 

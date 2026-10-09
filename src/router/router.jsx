@@ -2,12 +2,14 @@ import { createHashRouter } from "react-router";
 import Layout from "../layout/Layout";
 import Home from "../pages/Home";
 import Fiches from "../pages/Fiches";
-import Progress from "../pages/Progress";
 import Settings from "../pages/Settings";
 import FicheDetails from "../pages/FicheDetails";
 import Training from "../pages/Training";
 import TrainingQuiz from "../pages/TrainingQuiz";
 import Entrainement from "../pages/Entrainement";
+import Onboarding from "../pages/Onboarding";
+import OnboardingEnd from "../pages/OnboardingEnd";
+import Help from "../pages/Help";
 
 const router = createHashRouter([
   {
@@ -35,12 +37,20 @@ const router = createHashRouter([
         element: <TrainingQuiz />
       },
       {
+        path: "/premiers-pas",
+        element: <Onboarding />,
+      },
+      {
+        path: "/premiers-pas/fin",
+        element: <OnboardingEnd />,
+      },
+      {
         path: "/entrainement",
         element: <Entrainement />,
       },
       {
-        path: "/progres",
-        element: <Progress />,
+        path: "/aide",
+        element: <Help />,
       },
       {
         path: "/options",

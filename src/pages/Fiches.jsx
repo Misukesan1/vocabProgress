@@ -60,7 +60,7 @@ export default function Fiches() {
               className="neu-btn neu-shape-control neu-focusable flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-primary"
             >
               <Plus size={14} />
-              Nouvelle
+              Nouvelle collection
             </button>
           </div>
 
@@ -90,7 +90,7 @@ export default function Fiches() {
               className="neu-btn neu-shape-control neu-focusable flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-primary"
             >
               <Plus size={14} />
-              Nouvelle
+              Nouvelle fiche
             </button>
           </div>
 

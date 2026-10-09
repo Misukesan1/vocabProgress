@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -19,6 +19,8 @@ import {
   updateTrainingCard,
 } from "../features/trainingSlice";
 import { showAlert } from "../features/alertSlice";
+import { isTutorialPending } from "../utils/onboarding";
+import { useTrainingTime } from "../utils/useTrainingTime";
 import PageStub from "../componnents/common/PageStub";
 import ModalConfirm from "../componnents/common/ModalConfirm";
 import DropdownMenuTrainingCard from "../componnents/DropdownMenuTrainingCard";
@@ -60,7 +62,11 @@ export default function TrainingQuiz() {
   const remainingCards = ficheCards?.filter((card) => !card.desactive);
   const hasEnoughCards = (ficheCards?.length ?? 0) >= QUIZ_MIN_CARDS;
 
-  const [sessionStart] = useState(() => Date.now());
+  // Temps de révision (hors pauses) et statistiques de la fiche à la fin de chaque tour
+  const isRoundRunning = isSessionReady && !!fiche && !!currentCard;
+  const isRoundFinished = isSessionReady && !!fiche && flashcards.length > 0 && !currentCard;
+  useTrainingTime(ficheId, isRoundRunning, isRoundFinished);
+
   const quittingRef = useRef(false);
   const busyRef = useRef(false);
 
@@ -82,18 +88,31 @@ export default function TrainingQuiz() {
 
   const quit = () => {
     quittingRef.current = true;
-    navigate(`/fiche/${ficheId}`);
+    // Première révision du tutoriel terminée : on finit par le récap
+    navigate(isTutorialPending() ? "/premiers-pas/fin" : `/fiche/${ficheId}`);
     dispatch(clearTraining());
   };
 
   // Quitter en plein tour demande confirmation (la position dans le tour est perdue)
   const { isOpen: isOpenQuit, onOpen: onOpenQuit, onOpenChange: onOpenChangeQuit } = useDisclosure();
   const requestQuit = () => {
-    if (currentCard && currentIndex > 0) onOpenQuit();
+    // Première révision du tutoriel : quitter = pause. La séance est gardée et
+    // l'accueil (toujours verrouillé) propose de la reprendre.
+    if (isTutorialPending()) {
+      navigate("/");
+      return;
+    }
+    // Même règle en cartes et en QCM : confirmation tant qu'un tour est en cours
+    if (currentCard) onOpenQuit();
     else quit();
   };
 
   const finish = () => {
+    // Première révision du tutoriel : pas de notification, elle masquerait le récap
+    if (isTutorialPending()) {
+      quit();
+      return;
+    }
     const plural = totalDeselectWords > 1 ? "s" : "";
     dispatch(
       showAlert({
@@ -170,6 +189,7 @@ export default function TrainingQuiz() {
         currentIndex={currentIndex}
         total={flashcards.length}
         onQuit={requestQuit}
+        isPause={isTutorialPending()}
       />
 
       {isRoundOver ? (
@@ -179,14 +199,17 @@ export default function TrainingQuiz() {
           deselectWords={deselectWords}
           totalDeselectWords={totalDeselectWords}
           roundSize={flashcards.length}
-          sessionStart={sessionStart}
+          roundDuration={training.roundElapsedMs}
+          sessionDuration={training.sessionElapsedMs}
           score={
             <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
               {quizCorrect} bonne{quizCorrect > 1 ? "s" : ""} réponse{quizCorrect > 1 ? "s" : ""} sur{" "}
               {flashcards.length}
             </p>
           }
-          onNextRound={startNextRound}
+          // Première révision du tutoriel : un seul tour, puis le récap
+          onNextRound={isTutorialPending() ? undefined : startNextRound}
+          finishHint={isTutorialPending() ? "Un dernier écran pour te présenter l'appli, puis c'est à toi." : undefined}
           onFinish={finish}
         />
       ) : (
@@ -261,7 +284,7 @@ export default function TrainingQuiz() {
       <ModalConfirm
         isOpen={isOpenQuit}
         onOpenChange={onOpenChangeQuit}
-        message="Quitter la révision ? Les cartes marquées « maîtrisées » restent enregistrées, mais le tour en cours sera perdu."
+        message="Quitter la révision ? Les cartes marquées « maîtrisées » restent enregistrées, mais ta progression dans ce tour sera perdue."
         confirmLabel="Quitter"
         onConfirm={quit}
       />
@@ -293,7 +316,7 @@ function QuizChoice({ card, isReversed, isAnswered, isCorrect, isPicked, onPick 
 
   return (
     <div
-      className={`quiz-flip neu-raised-sm neu-shape-control flex min-h-20 flex-col items-center justify-center gap-1 whitespace-pre-line break-words p-3 text-center ${ring}`}
+      className={`flip-in neu-raised-sm neu-shape-control flex min-h-20 flex-col items-center justify-center gap-1 whitespace-pre-line break-words p-3 text-center ${ring}`}
     >
       <span className="text-xl font-medium text-neutral-800 dark:text-neutral-100">{card.frontCard}</span>
       <span className="text-xs text-neutral-600 dark:text-neutral-300">{card.backCard}</span>

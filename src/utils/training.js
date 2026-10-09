@@ -32,6 +32,19 @@ export function formatDuration(ms) {
 }
 
 /**
+ * Durée cumulée lisible : « 0 s », « 46 s », « 12 min », « 1 h 05 »
+ * @param {number} ms
+ * @returns {string}
+ */
+export function formatTotalDuration(ms) {
+  const totalSec = Math.floor((ms || 0) / 1000);
+  if (totalSec < 60) return `${totalSec} s`;
+  const totalMin = Math.floor(totalSec / 60);
+  if (totalMin < 60) return `${totalMin} min`;
+  return `${Math.floor(totalMin / 60)} h ${(totalMin % 60).toString().padStart(2, "0")}`;
+}
+
+/**
  * Réponses d'une question de QCM : la carte et des leurres de la même fiche
  * (maîtrisées comprises), dans un ordre aléatoire. Un leurre n'a jamais la même
  * réponse que la bonne carte (sinon deux réponses seraient justes) ni qu'un autre leurre.

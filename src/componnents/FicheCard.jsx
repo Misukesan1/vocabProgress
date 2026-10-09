@@ -8,7 +8,7 @@ export default function FicheCard({ fiche }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const isSelected = useSelector((state) => state.fiche.selectedFiche?.id === fiche.id);
-  const cardCount = useLiveQuery(() => countFlashcardsFromFiche(fiche.id), [fiche.id]) ?? 0;
+  const cardCount = useLiveQuery(() => countFlashcardsFromFiche(fiche.id), [fiche.id]);
 
   const handleOpen = () => {
     dispatch(selectFiche(fiche));
@@ -31,7 +31,7 @@ export default function FicheCard({ fiche }) {
         )}
       </div>
       <span className="shrink-0 pl-3 text-xs text-neutral-500 dark:text-neutral-400">
-        {cardCount} carte{cardCount > 1 ? "s" : ""}
+        {cardCount !== undefined && `${cardCount} carte${cardCount > 1 ? "s" : ""}`}
       </span>
     </button>
   );
